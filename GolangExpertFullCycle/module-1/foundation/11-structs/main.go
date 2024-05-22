@@ -2,23 +2,44 @@ package main
 
 import "fmt"
 
-// Structs é como se fosse um tipo de uma Classe
+type Teste struct {
+	Teste1 string
+	Teste2 int
+}
+type Endereco struct {
+	Logradouro string
+	Numero     int
+	Cidade     string
+	Estado     string
+}
 type Cliente struct {
-	Nome  string
-	Idade int
-	Ativo bool
+	Nome    string
+	Idade   int
+	Ativo   bool
+	Address Endereco
+	Teste
+}
+
+func (c Cliente) Desativar() {
+	c.Ativo = false
+	fmt.Printf("O cliente %s foi desativado\n", c.Nome)
 }
 
 func main() {
 
 	guilherme := Cliente{
-		Nome:  "Wesley",
+		Nome:  "Gui",
 		Idade: 30,
 		Ativo: true,
 	}
 
+	guilherme.Teste1 = "Teste1"
+	guilherme.Teste2 = 10
+	guilherme.Address.Cidade = "São Paulo"
+	guilherme.Address.Numero = 1000
 	fmt.Println(guilherme)
-	guilherme.Ativo = false
-	fmt.Printf("Nome: %s Idade: %d Ativo: %t\n", guilherme.Nome, guilherme.Idade, guilherme.Ativo)
+
+	guilherme.Desativar()
+	fmt.Println(guilherme)
 
 }
