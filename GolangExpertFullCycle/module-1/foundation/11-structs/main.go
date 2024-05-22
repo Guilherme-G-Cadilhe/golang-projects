@@ -20,7 +20,14 @@ type Cliente struct {
 	Teste
 }
 
-func (c Cliente) Desativar() {
+// O * indica que o ponteiro vai apontar para o endereço do cliente e alterações alteram a variavel original
+func (c *Cliente) Desativar() {
+	c.Ativo = false
+	fmt.Printf("O cliente %s foi desativado\n", c.Nome)
+}
+
+// O valor que for alterado não altera a variavel original
+func (c Cliente) Ativar() {
 	c.Ativo = false
 	fmt.Printf("O cliente %s foi desativado\n", c.Nome)
 }
