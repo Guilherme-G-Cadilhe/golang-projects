@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 func main() {
 
 	// temos apenas o FOR
@@ -22,7 +26,7 @@ func main() {
 	// Estilo do WHILE do JS
 	i := 0
 	for i < 10 {
-		print(i)
+		println(i)
 		i++
 	}
 
@@ -31,4 +35,26 @@ func main() {
 	// 	println("Loop Infinito")
 	// }
 
+	leetCode := []int{2, 7, 11, 15}
+	target := 9
+	result := twoSum(leetCode, target)
+	fmt.Println(" Result twoSums: ", result)
+
+}
+func twoSum(nums []int, target int) []int {
+	// https://leetcode.com/problems/two-sum
+	// Time: O(n) ( If there is many items, will look at them just once)
+	// Space: O(n) ( Will add at most n items (the current length) to the map)
+	result := make(map[int]int)
+	for index, value := range nums {
+		println("Index: ", index, " Value: ", value)
+		possibleNumber := target - value
+
+		if _, ok := result[possibleNumber]; ok {
+			return []int{result[possibleNumber], index}
+		}
+		result[value] = index
+
+	}
+	return nil
 }
