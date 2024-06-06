@@ -15,9 +15,10 @@ type Cursos []Curso
 
 func main() {
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(Res http.ResponseWriter, req *http.Request) {
+		//ParseFiles => Procura no diretorio atual em que foi instancializado
 		t := template.Must(template.New("template.html").ParseFiles("template.html"))
-		err := t.Execute(w, Cursos{
+		err := t.Execute(Res, Cursos{
 			{Nome: "Golang", CargaHoraria: 40},
 			{Nome: "Java", CargaHoraria: 20},
 			{Nome: "Python", CargaHoraria: 5},
