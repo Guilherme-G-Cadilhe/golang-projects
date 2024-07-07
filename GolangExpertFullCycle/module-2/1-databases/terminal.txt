@@ -1,0 +1,10 @@
+docker compose up -d
+
+// ( Abre bash do container de serviço chamado mysql)
+docker compose exec mysql bash 
+
+// Loga dentro do servidor do mysql no database 'goexpert', como root
+mysql -uroot -p goexpert 
+
+// Cria tabela inicial
+create table products (id varchar(255), name varchar(80), price decimal(10,2), primary key (id));
