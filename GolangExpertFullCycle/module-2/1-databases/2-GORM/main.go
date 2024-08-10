@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"         // Importa o pacote GORM
 )
 
+// Tabela de categorias
 type Category struct {
 	ID   int `gorm:"primaryKey"`
 	Name string
@@ -14,10 +15,18 @@ type Category struct {
 
 // GormProduct define a estrutura do produto para o GORM, mapeada para a tabela "gorm_products"
 type GormProduct struct {
-	ID         int     `gorm:"primaryKey"` // Define a chave primária
-	Name       string  // Nome do produto
-	Price      float64 // Preço do produto
-	gorm.Model         // Definição de campos adicionais (CreatedAt, UpdatedAt, DeletedAt)
+	ID           int          `gorm:"primaryKey"` // Define a chave primária
+	Name         string       // Nome do produto
+	Price        float64      // Preço do produto
+	CategoryID   int          // ID da categoria do produto ( Belongs to)
+	Category     Category     `gorm:"foreignKey:CategoryID"`              // Cria um relacionamento entre o GORMProduct e a Category
+	SerialNumber SerialNumber `gorm:"foreignKey:ProductID;references:ID"` // 1 pra 1
+	gorm.Model                // Definição de campos adicionais (CreatedAt, UpdatedAt, DeletedAt)
+}
+type SerialNumber struct {
+	ID        int `gorm:"primaryKey"`
+	Number    string
+	ProductID int
 }
 
 func main() {
@@ -43,34 +52,46 @@ func main() {
 
 	// AutoMigrate cria a tabela "gorm_products" se ela ainda não existir
 	// O método AutoMigrate cria a tabela com base na estrutura GormProduct
-	db.AutoMigrate(&GormProduct{})
+	db.AutoMigrate(&GormProduct{}, &Category{}, &SerialNumber{})
 
 	// Criação de produtos
-	createProducts(db)
+	createProductsAndCategories(db)
 
 	// Leitura de produtos
 	readProducts(db)
 
 	// Atualização de produtos
-	updateProduct(db)
+	// updateProduct(db)
 
 	// Exclusão de produtos
-	deleteProduct(db)
+	// deleteProduct(db)
 }
 
 // Função para criar produtos
-func createProducts(db *gorm.DB) {
+func createProductsAndCategories(db *gorm.DB) {
+	// Cria uma nova categoria na tabela "gorm_categories"
+	category := Category{
+		Name: "Hardware"}
+	db.Create(&category)
+
 	// Cria um novo produto na tabela "gorm_products"
 	db.Create(&GormProduct{
-		Name:  "Mouse", // Nome do produto
-		Price: 200.99,  // Preço do produto
+		Name:       "Mouse",     // Nome do produto
+		Price:      200.99,      // Preço do produto
+		CategoryID: category.ID, // ID da categoria
+	})
+
+	// cria serialnumber
+	db.Create(&SerialNumber{
+		ProductID: 1,
+		Number:    "12616516",
 	})
 
 	// Cria múltiplos produtos em batch (lote)
 	products := []GormProduct{
-		{Name: "Mouse VRAU", Price: 2000.99},
-		{Name: "Monitor VRAU", Price: 889.99},
-		{Name: "Notebook BLA", Price: 1000.99},
+		{Name: "Mouse VRAU", Price: 2000.99, CategoryID: category.ID},
+		{Name: "Monitor VRAU", Price: 889.99, CategoryID: category.ID},
+		{Name: "Notebook BLA", Price: 1000.99, CategoryID: category.ID},
 	}
 	// Insere todos os produtos da slice products na tabela "gorm_products"
 	db.Create(&products)
@@ -85,8 +106,8 @@ func readProducts(db *gorm.DB) {
 
 	// Seleciona um registro na tabela "gorm_products" pelo nome
 	var productByName GormProduct
-	db.First(&productByName, "Name = ?", "Notebook TAR")
-	fmt.Println("Produto com nome 'Notebook TAR':", productByName)
+	db.First(&productByName, "Name = ?", "Notebook BLA")
+	fmt.Println("Produto com nome 'Notebook BLA':", productByName)
 
 	// Seleciona todos os registros na tabela "gorm_products"
 	var products []GormProduct
@@ -94,6 +115,14 @@ func readProducts(db *gorm.DB) {
 	fmt.Println("Todos os produtos:")
 	for _, product := range products {
 		fmt.Println(product)
+	}
+
+	// Seleciona registros com outras tabelas relacionadas
+	var productsWithCategory []GormProduct
+	db.Preload("Category").Preload("SerialNumber").Find(&productsWithCategory)
+	fmt.Println("Produtos com categoria:")
+	for _, product := range productsWithCategory {
+		fmt.Println(product.Name, "-", product.Category.Name, '-', product.SerialNumber.Number)
 	}
 
 	// Seleciona os registros da tabela "gorm_products" com limite e offset

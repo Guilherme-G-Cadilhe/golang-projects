@@ -14,3 +14,6 @@ show tables;
 
 // Detalhes das colunas da tabela
 desc [tabela]
+
+// Deleta tabela
+drop [tabela]

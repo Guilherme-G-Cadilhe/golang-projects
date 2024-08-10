@@ -1,0 +1,12 @@
+[ Criar o gerenciador dos pacotes / package.lock ]
+> go mod init 'nomeParaOSeuPacote'
+
+[ Organizar e arrumar pacotes ]
+> go mod tidy
+
+[ Pegar pacotes externos / (npm i "pacote")]
+> go get github.com/mattn/go-sqlite3
+
+[ Rodar e startar arquivo go]
+> go run arquivo.go
+
