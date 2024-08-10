@@ -47,7 +47,7 @@ func main() {
 
 func ConsultaCotacao(db *sql.DB, response http.ResponseWriter, request *http.Request) {
 	// Padrão para o Exercicio é 200ms
-	ctxApi, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctxApi, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	result, err := FetchCotacaoUSDBRL(ctxApi)
