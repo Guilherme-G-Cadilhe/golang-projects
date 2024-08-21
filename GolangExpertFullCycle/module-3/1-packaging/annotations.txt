@@ -1,0 +1,30 @@
+1 - go.mod define o caminho do módulo, que geralmente corresponde ao repositório no GitHub ou outro serviço de hospedagem de código. A convenção é usar o URL do repositório para identificar o módulo, mas não é obrigatório. O Go busca as dependências (módulos) usando o caminho especificado no go.mod, que pode ser um nome personalizado ou o URL do repositório.
+Ex: module github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-3/1-packaging/1/math
+
+
+2 - Na estrutura de projetos Go, a pasta cmd é uma convenção amplamente adotada para organizar os arquivos executáveis do projeto. Cada subdiretório dentro de cmd geralmente corresponde a um binário do projeto. (main.go)
+
+3 - Rodar 'go mod tidy' para atualizar o 'go.mod' e 'go.sum' adicionando biblioteca uuid ou removendo se não estiver mais sendo usada.
+go.mod e go.sum funcionam como se fosse o package.json e o package.lock.
+
+4 - comando 'got get github.com/CaminhoDaBliblioteca' para instalar a biblioteca manualmente.
+
+5.1- Se você estiver desenvolvendo um módulo localmente e ele ainda não estiver publicado em um repositório remoto, você pode utilizar o comando `replace` no go.mod para referenciar o caminho local do módulo.
+Isso é útil quando você está trabalhando em múltiplos módulos simultaneamente e deseja testar as alterações antes de publicar o módulo.
+> Para referenciar um módulo local em vez de um remoto, use:
+1. Edite o go.mod com o comando `go mod edit -replace` para apontar o caminho local.
+Exemplo: 
+| `go mod edit -replace github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-3/1-packaging/3-goModReplace/math=../math`
+2. Execute `go mod tidy` para atualizar as dependências e limpar as não utilizadas.
+
+
+5.2 - Quando você está trabalhando com múltiplos módulos Go localmente, você pode utilizar Workspaces para gerenciar e desenvolver esses módulos simultaneamente. Isso permite que você trabalhe com dependências locais sem a necessidade de publicar cada módulo em um repositório remoto.
+1. > Para criar um workspace que inclua os módulos locais (subpastas) 'math' e 'sistema', execute:
+| `go work init ./math ./sistema`
+ Isso configura o ambiente de desenvolvimento para que o Go trate esses módulos como parte de um único workspace.
+2. > Quando utilizando workspaces, o comando `go mod tidy` pode tentar buscar dependências remotamente, o que pode não ser desejado ao trabalhar com módulos locais. Nesse caso, use `go get` para instalar ou atualizar dependências.
+Alternativamente, 
+| `go mod tidy -e` 
+pode ser usado para ignorar erros relacionados à importação de dependências locais.
+
+
