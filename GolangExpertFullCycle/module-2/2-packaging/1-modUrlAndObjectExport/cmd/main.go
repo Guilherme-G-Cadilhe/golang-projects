@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-3/1-packaging/1-modUrlAndObjectExpor/math"
+	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/2-packaging/1-modUrlAndObjectExpor/math"
 )
 
 func main() {

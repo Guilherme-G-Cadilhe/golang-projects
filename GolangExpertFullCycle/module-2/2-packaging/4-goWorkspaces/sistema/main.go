@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-3/1-packaging/4-goWorkspaces/math"
+	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/2-packaging/4-goWorkspaces/math"
 	"github.com/google/uuid"
 )
 
