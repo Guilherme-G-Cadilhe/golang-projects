@@ -1,8 +1,12 @@
 [ Criar o gerenciador dos pacotes / package.lock ]
-> go mod init 'nomeParaOSeuPacote'
+> go mod init 'github.com/você/seuProjeto/Pacote' (pode ser um nome personalizado ou o URL do repositório)
+
+[ Criar o gerenciador de workspaces para modulos locais ]
+> go work init ./modulo1 ./modulo2` (Na pasta parente do projeto)
 
 [ Organizar e arrumar pacotes ]
 > go mod tidy
+> go mod tidy -e (flag para ignorar erros relacionados à importação de dependências locais)
 
 [ Pegar pacotes externos / (npm i "pacote")]
 > go get github.com/mattn/go-sqlite3
@@ -10,3 +14,6 @@
 [ Rodar e startar arquivo go]
 > go run arquivo.go
 
+[ Gerar Build ]
+> GOOS=windows go build arquivo.go ( Especifica o OS)
+> go build arquivo.go
