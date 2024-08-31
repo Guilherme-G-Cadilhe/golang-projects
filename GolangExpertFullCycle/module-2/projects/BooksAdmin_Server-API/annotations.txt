@@ -1,0 +1,7 @@
+
+Rodar docker
+- docker build -t [nomeDoContainer] [caminhoDoDiretorioComDockerFile]
+: docker build -t teste .
+
+- docker run -p[Porta:Porta] [nomeDoContainer]
+: docker run -p8080:8080 teste
