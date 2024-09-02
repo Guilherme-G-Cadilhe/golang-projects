@@ -17,3 +17,25 @@
 [ Gerar Build ]
 > GOOS=windows go build arquivo.go ( Especifica o OS)
 > go build arquivo.go
+
+[ Testar ]
+> go test . (Diretorio atual)
+> go test (Pacote atual)
+> go test -coverprofile=coverage.out (Gera arquivo coverage e testa se engloba todas os cases)
+> go tool cover -html=coverage.out (Lê arquivo coverage gerado e abre página web mostrando funções que faltam)
+> go test -bench=. (Diretorio atual, Mostra o tempo de cada teste e configurações do sistema, como cpu, goos, goarch, pacote, nucleos, etc.)
+> go test -bench=. -run=^# (Roda todos os testes que tenha o nome do regex)
+> go test -bench=. -run=^# -count=10 (Roda todos os testes que tenha o nome do regex e executa 10 vezes)
+> go test -bench=. -run=^# -count=10 -benchtime=3s (Continua rodando por 3 segundos cada função)
+> go test -bench=. -run=^# -benchmem (Mostra o quanto de memória foi usado)
+> go test -fuzz=. (Roda os testes de Fuzzing)
+> go test -fuzz=. -fuzztime=5s (Tempo limite fazendo Fuzzing)
+Flags:
+-v  ( Executa os testes em modo verboso, mostrando detalhes de cada execução)
+-coverprofile=coverage.out  ( Gera um relatório de cobertura que pode ser visualizado em um navegador para identificar quais partes do código foram testadas.)
+-bench=.  ( Executa todos os benchmarks no pacote atual.)
+-run=^#  ( Utilizado para rodar testes específicos com base em regex.)
+-count=10  ( Define o número de vezes que os testes devem ser executados.)
+-benchtime=3s  ( Define o tempo de execução de cada benchmark.)
+-benchmem  ( Mostra a quantidade de memória alocada durante a execução do benchmark.)
+-fuzztime=5s  ( Quantidade de tempo fazendo Fuzzing )
