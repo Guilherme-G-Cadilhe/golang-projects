@@ -1,3 +1,20 @@
+[ Estrutura de Layout de projetos utilizada pela comunidade]
+https://github.com/golang-standards/project-layout
+
+/internal = Onde roda a aplicação, e contém coisas somente da aplicação, sem ser reaproveitado em outras aplicações. ( Não permite que seja importado em outras aplicações ou bibliotecas)
+
+/pkg = Bibliotecas que são publicas, que podem ser utilizadas em diversos projetos e externamente.
+
+/cmd = Onde fica o Executavel
+> /cmd/meu-app = Onde fica o nome da aplicação
+
+/configs = Padrões de variaveis de ambiente, configurações ou templates de configurações
+
+/test = Arquivos adicionais que ajudam em teste: Docs de Testes, Exemplos, Stubs, Arquivos Http, etc
+
+/api = OpenAPi/Swagger specs, JSON schema files, Arquivos de definição de protocolos.
+
+________________________________________
 [ Criar o gerenciador dos pacotes / package.lock ]
 > go mod init 'github.com/você/seuProjeto/Pacote' (pode ser um nome personalizado ou o URL do repositório)
 
@@ -11,6 +28,7 @@
 [ Pegar pacotes externos / (npm i "pacote")]
 > go get github.com/mattn/go-sqlite3
 
+________________________________________
 [ Rodar e startar arquivo go]
 > go run arquivo.go
 
@@ -18,6 +36,7 @@
 > GOOS=windows go build arquivo.go ( Especifica o OS)
 > go build arquivo.go
 
+________________________________________
 [ Testar ]
 > go test . (Diretorio atual)
 > go test (Pacote atual)
