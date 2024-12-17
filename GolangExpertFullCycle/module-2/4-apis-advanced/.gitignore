@@ -1,0 +1,5 @@
+.env.example
+.env
+.env.prod
+.env.qa
+.env.test

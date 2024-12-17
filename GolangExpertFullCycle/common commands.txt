@@ -39,6 +39,7 @@ ________________________________________
 ________________________________________
 [ Testar ]
 > go test . (Diretorio atual)
+> go test ./... (Todas as pastas e pastas aninhadas)
 > go test (Pacote atual)
 > go test -coverprofile=coverage.out (Gera arquivo coverage e testa se engloba todas os cases)
 > go tool cover -html=coverage.out (Lê arquivo coverage gerado e abre página web mostrando funções que faltam)
