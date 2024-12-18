@@ -17,7 +17,7 @@ func TestCreateNewProduct(t *testing.T) {
 		t.Error(err)
 	}
 	db.AutoMigrate(&entity.Product{})
-	productDB := NewProduct(db)
+	productDB := NewProductDB(db)
 	product, err := entity.NewProduct("Product 1", 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, product)
@@ -39,7 +39,7 @@ func TestFindAllProducts(t *testing.T) {
 		assert.Nil(t, db.Create(product).Error)
 	}
 
-	productDB := NewProduct(db)
+	productDB := NewProductDB(db)
 	products, err := productDB.FindAll(1, 10, "asc")
 	assert.Nil(t, err)
 	assert.NotNil(t, products)
@@ -68,7 +68,7 @@ func TestFindProductByID(t *testing.T) {
 		t.Error(err)
 	}
 	db.AutoMigrate(&entity.Product{})
-	productDB := NewProduct(db)
+	productDB := NewProductDB(db)
 	product, err := entity.NewProduct("Product 1", 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, product)
@@ -87,7 +87,7 @@ func TestUpdateProduct(t *testing.T) {
 		t.Error(err)
 	}
 	db.AutoMigrate(&entity.Product{})
-	productDB := NewProduct(db)
+	productDB := NewProductDB(db)
 	product, err := entity.NewProduct("Product 1", 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, product)
@@ -109,7 +109,7 @@ func TestDeleteProduct(t *testing.T) {
 		t.Error(err)
 	}
 	db.AutoMigrate(&entity.Product{})
-	productDB := NewProduct(db)
+	productDB := NewProductDB(db)
 	product, err := entity.NewProduct("Product 1", 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, product)

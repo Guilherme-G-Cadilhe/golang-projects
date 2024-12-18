@@ -3,3 +3,4 @@
 .env.prod
 .env.qa
 .env.test
+*.db

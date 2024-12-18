@@ -59,3 +59,8 @@ Flags:
 -benchtime=3s  ( Define o tempo de execução de cada benchmark.)
 -benchmem  ( Mostra a quantidade de memória alocada durante a execução do benchmark.)
 -fuzztime=5s  ( Quantidade de tempo fazendo Fuzzing )
+
+________________________________________
+[ Banco de Dados ]
+
+sqlite3 caminhoDoBanco/test.db = Inicializa no terminal conexão para Queries do bacno
