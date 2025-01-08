@@ -1,62 +1,97 @@
 package main
 
 import (
-	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/configs"
-	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/internal/dto"
+	_ "github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/docs"
 	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/internal/entity"
 	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/internal/infra/database"
+	"github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/4-apis-advanced/internal/infra/webserver/handlers"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/jwtauth"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
+// ===== DOC PARA O SWAG =====
+
+// @title           Go Expert API Example
+// @version         1.0
+// @description     Product API with authentication
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Guilherme Cadilhe
+// @contact.url    github.com/Guilherme-G-Cadilhe
+// @contact.email  no-email
+
+// @license.name  Lincensa exemplo
+// @license.url   Sem Link
+
+// @host      localhost:8000
+// @BasePath  /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
-	config, err := configs.LoadConfig(".")
+	configs, err := configs.LoadConfig(".")
 	if err != nil {
 		panic(err)
 	}
-	println(config.DBDriver)
 	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
 	db.AutoMigrate(&entity.User{}, &entity.Product{})
 	productDB := database.NewProductDB(db)
-	productHandler := NewProductHandler(productDB)
+	productHandler := handlers.NewProductHandler(productDB)
 
-	routes := http.NewServeMux()
-	routes.HandleFunc("/products", productHandler.CreateProduct)
+	userDB := database.NewUser(db)
+	userHandler := handlers.NewUserHandler(userDB)
 
-	http.ListenAndServe(":8000", routes)
+	r := chi.NewRouter()
+
+	r.Use(middleware.Recoverer)
+	// Middleware para passar Context, poderia ser utilizado para JWT
+	r.Use(middleware.WithValue("jwt", configs.TokenAuth))
+	r.Use(middleware.WithValue("jwtExpiresIn", configs.JWTExpiresIn))
+
+	// Logger avançado
+	r.Use(middleware.Logger)
+
+	// Logger criado para exemplo
+	// r.Use(LogRequest)
+
+	r.Route("/products", func(r chi.Router) {
+		r.Use(jwtauth.Verifier(configs.TokenAuth)) // Middleware para verificar o token JWT no cabeçalho Authorization automaticamente
+		r.Use(jwtauth.Authenticator)               // Middleware para autenticar o token JWT de forma automatica
+
+		r.Route("/{id}", func(r chi.Router) {
+			r.Get("/", productHandler.GetProduct)
+			r.Put("/", productHandler.UpdateProduct)
+			r.Delete("/", productHandler.DeleteProduct)
+		})
+		r.Get("/", productHandler.GetAllProducts)
+		r.Post("/", productHandler.CreateProduct)
+	})
+
+	r.Post("/users", userHandler.CreateUser)
+	r.Post("/users/generate_token", userHandler.GetJWT)
+
+	r.Get("/docs/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8000/docs/doc.json")))
+
+	// swag init -g cmd/server/main.go
+	//http://localhost:8000/docs/index.html
+	http.ListenAndServe(":8000", r)
 }
 
-type ProductHandler struct {
-	ProductDB database.ProductInterface
-}
-
-func NewProductHandler(productDB database.ProductInterface) *ProductHandler {
-	return &ProductHandler{ProductDB: productDB}
-}
-
-func (handler *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	// DTO = Data Transfer Object, faz a validação dos dados que vem da requisição igual um De_Para
-	var product dto.CreateProductInput
-	err := json.NewDecoder(r.Body).Decode(&product)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	newProduct, err := entity.NewProduct(product.Name, product.Price)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = handler.ProductDB.Create(newProduct)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
+// Custom Middleware log
+func LogRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
 }

@@ -1,0 +1,39 @@
+====[Handlers Http]====
+- Gorilla/mux (router)
+- go-chi (router mais popular)
+
+- Echo (web framework)
+- Fiber (Express-inspired web framework written in GO)
+- Gin golang (web framework)
+
+- Buffalo (eco-system: estilo Rails,Django, etc)
+
+====[ Auth HTTP]====
+- JsonWebToken
+:github.com/go-chi/jwtauth
+
+- uuid
+:github.com/google/uuid 
+
+- Crypto (Criptografia)
+:golang.org/x/crypto
+
+====[Bancos de Dados]====
+- GORM + GORM SQLITE3
+:gorm.io/gorm
+:gorm.io/driver/sqlite
+
+====[Chaves ENV]====
+- Viper
+
+====[Testes]====
+- Testify
+:github.com/stretchr/testify
+
+
+====[Doc]====
+- Swag 
+(Instala no gopath na pasta bin)
+go install github.com/swaggo/swag/cmd/swag@latest
+// :swag init -g suapasta/main.go | ou :swag init (Se o main.go for na pasta raiz)
+//http://localhost:8000/docs/index.html

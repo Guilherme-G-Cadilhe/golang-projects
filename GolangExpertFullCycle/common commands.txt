@@ -64,3 +64,11 @@ ________________________________________
 [ Banco de Dados ]
 
 sqlite3 caminhoDoBanco/test.db = Inicializa no terminal conexão para Queries do bacno
+
+________________________________________
+[Documentação]
+(Instala no gopath na pasta bin)
+Swag = go install github.com/swaggo/swag/cmd/swag@latest
+:swag init -g suapasta/main.go 
+ou :swag init (Se o main.go for na pasta raiz)
+http://localhost:8000/docs/index.html
