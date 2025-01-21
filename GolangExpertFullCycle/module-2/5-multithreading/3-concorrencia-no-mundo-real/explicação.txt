@@ -1,0 +1,79 @@
+
+Este exemplo de código ilustra um problema comum em programação concorrente: a condição de corrida (race condition).
+
+= Explicação do Código
+- O código define uma variável global number que é incrementada a cada requisição HTTP para a raiz ("/").
+- O manipulador de requisições (http.HandleFunc) incrementa number e responde com o número atualizado de acessos à página.
+- O servidor HTTP é iniciado na porta 3000.
+
+= Problema: Condição de Corrida
+- Uma condição de corrida ocorre porque várias goroutines (uma para cada requisição HTTP) acessam e modificam a variável number simultaneamente.
+- Sem sincronização adequada, o valor de number pode ser lido e atualizado de maneira inconsistente, levando a resultados inesperados ou errados.
+
+
+= Solução: Sincronização
+Para resolver a condição de corrida, precisamos garantir que apenas uma goroutine por vez possa modificar number. Existem várias maneiras de fazer isso em Go:
+
+=== 1. Usando sync.Mutex====
+- Um Mutex (mutual exclusion) pode ser usado para proteger a seção crítica onde number é modificado.
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"sync"
+)
+
+var (
+	number uint64 = 0
+	mu     sync.Mutex
+)
+
+func main() {
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()   // Bloqueia o acesso a `number`
+		number++    // Incrementa o contador
+		mu.Unlock() // Desbloqueia após a modificação
+
+		w.Write([]byte(fmt.Sprintf("Você teve acesso a essa página: %d vezes", number)))
+	})
+
+	http.ListenAndServe(":3000", nil)
+}
+
+==== 2. Usando sync/atomic====
+O pacote sync/atomic permite operações atômicas em inteiros, o que pode ser mais eficiente para contadores simples.
+
+
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"sync/atomic"
+)
+
+var number uint64 = 0
+
+func main() {
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddUint64(&number, 1) // Incrementa o contador de forma atômica
+
+		w.Write([]byte(fmt.Sprintf("Você teve acesso a essa página: %d vezes", number)))
+	})
+
+	http.ListenAndServe(":3000", nil)
+}
+
+== Pontos Importantes
+- sync.Mutex: Útil para proteger seções críticas onde múltiplas operações devem ser executadas de forma consistente.
+
+- sync/atomic: Ideal para operações simples em variáveis compartilhadas, como incremento ou decremento, sem o custo adicional de um mutex.
+
+== Por Que Isso é Importante?
+- Em sistemas concorrentes, especialmente servidores web, múltiplas requisições podem ser processadas simultaneamente.
+
+- Manter a consistência dos dados compartilhados entre essas requisições é crucial para evitar bugs difíceis de depurar e comportamentos inesperados.
