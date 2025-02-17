@@ -1,0 +1,24 @@
+Conceitos Gerais de Eventos em Go
+
+----[Interfaces.go]
+Eventos: São representações de ocorrências (ações ou mudanças) no sistema. Eles carregam informações relevantes (payload) e podem ter um nome e uma data associada.
+
+Event Handlers (Manipuladores de Eventos): São funções ou objetos responsáveis por processar ou reagir a esses eventos.
+
+Event Dispatcher (Despachante de Eventos): É o componente que gerencia a inscrição (register) de handlers para tipos específicos de eventos e, quando um evento ocorre, repassa esse evento para todos os handlers registrados para aquele evento.
+
+Interfaces: Usamos interfaces para definir contratos. Assim, qualquer estrutura que implementar esses métodos pode ser usada como evento, handler ou dispatcher, promovendo desacoplamento e flexibilidade.
+
+EventInterface: Garante que todo evento tenha um nome, uma data/hora e um payload. Esses dados são essenciais para identificar e processar o evento.
+
+EventHandlerInterface: Simplifica a assinatura dos manipuladores de eventos, garantindo que eles implementem um método Handle para processar eventos.
+
+EventDispatcherInterface: Define as operações básicas necessárias para gerenciar a inscrição de handlers e o despacho de eventos.
+
+
+----[Event dispatcher.go]
+Mapa de Handlers: A estrutura handlers é um mapa que relaciona um nome de evento (string) a um slice de handlers. Isso permite que múltiplos manipuladores sejam registrados para o mesmo tipo de evento.
+
+Registro de Handlers: No método Register, antes de adicionar um handler, o código verifica se ele já está registrado para evitar duplicidade, retornando um erro se for o caso.
+
+Construtor: NewEventDispatcher inicializa o mapa e retorna um novo dispatcher, garantindo que o objeto esteja pronto para uso.
