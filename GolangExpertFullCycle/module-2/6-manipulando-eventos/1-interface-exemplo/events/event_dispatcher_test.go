@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ type TestEventHandler struct {
 	ID int // Identificador único para diferenciar os handlers
 }
 
-func (e *TestEventHandler) Handle(event EventInterface) {
+func (e *TestEventHandler) Handle(event EventInterface, wg *sync.WaitGroup) {
 	// do something
 }
 
@@ -139,17 +140,51 @@ type MockHandler struct {
 	mock.Mock
 }
 
-func (m *MockHandler) Handle(event EventInterface) {
+func (m *MockHandler) Handle(event EventInterface, wg *sync.WaitGroup) {
 	m.Called(event)
+
+	wg.Done()
 }
 
 func (suite *EventDispatcherTestSuite) TestEventDispatcher_Dispatch() {
 	eventH := &MockHandler{}
 	eventH.On("Handle", &suite.event)
+
+	eh2 := &MockHandler{}
+	eh2.On("Handle", &suite.event)
+
 	suite.dispatcher.Register(suite.event.GetName(), eventH)
+	suite.dispatcher.Register(suite.event.GetName(), eh2)
 
 	suite.dispatcher.Dispatch(&suite.event)
 	eventH.AssertExpectations(suite.T())
+	eh2.AssertExpectations(suite.T())
 	eventH.AssertNumberOfCalls(suite.T(), "Handle", 1)
+	eh2.AssertNumberOfCalls(suite.T(), "Handle", 1)
+
+}
+
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Remove() {
+	err := suite.dispatcher.Register(suite.event.GetName(), &suite.handler)
+	suite.Nil(err)
+
+	err = suite.dispatcher.Register(suite.event.GetName(), &suite.handler2)
+	suite.Nil(err)
+
+	err = suite.dispatcher.Register(suite.event2.GetName(), &suite.handler3)
+	suite.Nil(err)
+
+	err = suite.dispatcher.Remove(suite.event.GetName(), &suite.handler)
+	suite.Nil(err)
+	suite.Equal(1, len(suite.dispatcher.handlers[suite.event.GetName()]))
+	assert.Equal(suite.T(), &suite.handler2, suite.dispatcher.handlers[suite.event.GetName()][0])
+
+	err = suite.dispatcher.Remove(suite.event.GetName(), &suite.handler2)
+	suite.Nil(err)
+	suite.Equal(0, len(suite.dispatcher.handlers[suite.event.GetName()]))
+
+	err = suite.dispatcher.Remove(suite.event2.GetName(), &suite.handler3)
+	suite.Nil(err)
+	suite.Equal(0, len(suite.dispatcher.handlers[suite.event2.GetName()]))
 
 }

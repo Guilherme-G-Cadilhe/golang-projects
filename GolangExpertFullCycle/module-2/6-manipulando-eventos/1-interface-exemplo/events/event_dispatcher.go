@@ -1,6 +1,9 @@
 package events
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 // Erro retornado se um handler já estiver registrado para um evento.
 var ErrHandlerAlreadyRegistered = errors.New("this handler is already registered")
@@ -23,9 +26,12 @@ func (eventDispatcher *EventDispatcher) Dispatch(event EventInterface) error {
 	// Verifica se houver handlers registrados para este evento.
 	if handlers, ok := eventDispatcher.handlers[event.GetName()]; ok {
 		// Despacha o evento para todos os handlers registrados.
+		waitgroup := &sync.WaitGroup{}
 		for _, handler := range handlers {
-			handler.Handle(event)
+			waitgroup.Add(1)
+			go handler.Handle(event, waitgroup)
 		}
+		waitgroup.Wait()
 	}
 	return nil
 }
@@ -43,6 +49,22 @@ func (eventDispatcher *EventDispatcher) Register(eventName string, newHandler Ev
 	}
 	// Adiciona o novo handler à lista de handlers para este evento.
 	eventDispatcher.handlers[eventName] = append(eventDispatcher.handlers[eventName], newHandler)
+	return nil
+}
+
+// Remove um handler de um evento.
+func (eventDispatcher *EventDispatcher) Remove(eventName string, handler EventHandlerInterface) error {
+	// Verifica se houver handlers registrados para este evento.
+	if _, ok := eventDispatcher.handlers[eventName]; ok {
+		// Remove o handler da lista de handlers para este evento.
+		for i, registeredHandler := range eventDispatcher.handlers[eventName] {
+			// Utiliza o Index do loop para remover a posição correta.
+			if registeredHandler == handler {
+				eventDispatcher.handlers[eventName] = append(eventDispatcher.handlers[eventName][:i], eventDispatcher.handlers[eventName][i+1:]...)
+				return nil
+			}
+		}
+	}
 	return nil
 }
 

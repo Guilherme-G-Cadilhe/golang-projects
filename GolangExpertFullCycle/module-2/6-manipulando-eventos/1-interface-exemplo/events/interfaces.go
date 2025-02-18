@@ -1,6 +1,9 @@
 package events
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // EventInterface define o contrato para um evento.
 // Um evento deve poder fornecer seu nome, a data/hora em que ocorreu e seu payload.
@@ -13,7 +16,7 @@ type EventInterface interface {
 // EventHandlerInterface define o contrato para um manipulador de eventos.
 // Um handler deve ser capaz de lidar com um evento recebido.
 type EventHandlerInterface interface {
-	Handle(event EventInterface) // Processa o evento.
+	Handle(event EventInterface, wg *sync.WaitGroup) // Processa o evento.
 }
 
 // EventDispatcherInterface define o contrato para um despachante de eventos.
