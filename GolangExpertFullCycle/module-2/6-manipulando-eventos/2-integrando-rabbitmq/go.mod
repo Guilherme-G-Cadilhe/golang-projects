@@ -1,4 +1,4 @@
-module teste
+module github.com/Guilherme-G-Cadilhe/golang-projects/GolangExpertFullCycle/module-2/6-manipulando-eventos/2-integrando-rabbitmq
 
 go 1.22.1
 
