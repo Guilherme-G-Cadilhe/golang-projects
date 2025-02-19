@@ -28,6 +28,14 @@ ________________________________________
 [ Pegar pacotes externos / (npm i "pacote")]
 > go get github.com/mattn/go-sqlite3
 
+[ Caso o Server Proxy do GO esteja com erro no nome de import do go.mod, puxar direto]
+> GOPROXY=direct go get github.com/user/repo
+Ou
+> go get -u github.com/package-name@latest (Procura a versão mais recente que houver)
+
+[ Limpar cache interno ]
+go clean -modcache
+
 ________________________________________
 [ Rodar e startar arquivo go]
 > go run arquivo.go
