@@ -18,10 +18,13 @@
 - Crypto (Criptografia)
 :golang.org/x/crypto
 
-====[Bancos de Dados]====
+====[Bancos de Dados e Mensageria]====
 - GORM + GORM SQLITE3
 :gorm.io/gorm
 :gorm.io/driver/sqlite
+
+- RabbitMQ
+:github.com/rabbitmq/amqp091-go
 
 ====[Chaves ENV]====
 - Viper
