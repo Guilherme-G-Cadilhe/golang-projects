@@ -1,0 +1,38 @@
+[DOCUMENTAÇÃO]
+https://gqlgen.com/
+
+
+[Cria os Schemas]
+Cria as configurações iniciais
+> go run github.com/99designs/gqlgen init
+
+[Gerando um novo modelo atualizado com base no Schema]
+> go run github.com/99designs/gqlgen generate
+
+
+====Quick start====
+[Initialise a new go module]
+
+> mkdir example
+> cd example
+> go mod init example
+
+[Add github.com/99designs/gqlgen to your project’s tools.go]
+> printf '//go:build tools\npackage tools\nimport (_ "github.com/99designs/gqlgen"\n _ "github.com/99designs/gqlgen/graphql/introspection")' | gofmt > tools.go
+> go mod tidy
+
+[Initialise gqlgen config and generate models]
+> go run github.com/99designs/gqlgen init
+> go mod tidy
+
+[Start the graphql server]
+> go run server.go
+
+
+==== Fluxo ====
+1. Criar as ações do seu banco de Dados
+2. Injetar os Structs de Depdencia dentro do arquivo 'resolver.go'
+3. Fazer a chamada deles no 'schema.resolvers.go'
+4. Criar models separados na categoria Model para permitir melhores utilizações
+5. Declarar esses models no 'gqlgen.yml' lá na seção de 'models' no final
+6. Rodar o 'generate' denovo

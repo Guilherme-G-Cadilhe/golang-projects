@@ -1,0 +1,45 @@
+[REPOSITORIO DE PROXY]
+https://proxy.golang.org/
+
+[Comando para criar Vendor (Proprio Cache de dependencias proxy estilo node_modules)]
+go mod vendor
+
+[Comando para ver variável GOPRIVATE]
+> go env | grep PRIVATE
+
+
+
+[Adicionando repositorios privados]
+> export GOPRIVATE=github.com/seuUsuario/seuRepositorio
+
+==Info==
+1. O go get/mod tidy vai utilizar autenticação da conta github logada para acessar o repo privado.
+
+2. Se não tiver autenticado, devemos passar credenciais manuais.
+ - Duas formas: LOGIN + TOKEN GITHUB  ou  LOGIN VIA SSH
+
+== 3. LOGIN + TOKEN ==
+
+[Criar .netrc]
+Criar ou escrever novas linhas no .netrc localizado na pasta raiz do usuario
+> ~/.netrc (Linux)
+> %userprofile% (Windows)
+
+<-- Digitar as 3 linhas abaixo:
+machine github.com           | api.bitbucket.com (Se for bitbucket)
+login seuUsuario
+password suaPersonalAccessToken
+-->
+AccessToken = Consegue gerar dentro de "Developer Settings > Personal acess token
+
+
+4. LOGIN VIA SSH
+- Via arquivo .git/config Dentro do repositorio especifico ou no .gitconfig da maquina
+> ~/.netrc (Linux) ou %userprofile% (Windows)
+> .gitconfig
+
+<-- Adicionar as linhas abaixo (contando com o espaçamento):
+[url "ssh://git@github.com/"]
+    insteadOf https://github.com/
+-->
+
