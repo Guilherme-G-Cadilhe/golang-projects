@@ -1,0 +1,11 @@
+
+[Como montar o melhor ambiente Dev no Windows, Linux e Mac com WSL]
+https://www.youtube.com/watch?v=O33trWxqVC4
+
+
+[Ambiente produtivo para desenvolvimento]
+https://github.com/argentinaluiz/ambiente-dev-produtivo
+
+
+[Guia/Tutorial rápido do WSL2 + Docker]
+https://github.com/codeedu/wsl2-docker-quickstart

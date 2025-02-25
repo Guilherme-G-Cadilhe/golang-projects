@@ -1,0 +1,57 @@
+[Docs]
+https://grpc.io/docs/languages/go/quickstart/
+https://protobuf.dev/overview/
+https://protobuf.dev/getting-started/gotutorial/
+https://protobuf.dev/programming-guides/style/
+https://github.com/ktr0731/evans
+
+[Instalar o Protocol Buffer Compiler]
+Windows (Binario pre-compilado):
+- https://github.com/protocolbuffers/protobuf/releases
+- Baixar o Win64 zip
+- Extrair em pasta no Disco C e copiar caminho do Bin: 
+> C:\protoc-29.3\bin
+- Abrir "Editar variaveis de Ambiente"
+- Adicionar um novo caminho no arquivo "PATH" usando esse copiado.
+- Reiniciar PC
+- Checar versão:
+> protoc --version
+
+Linux:
+- apt install -y protobuf-compiler
+- Checar versão:
+> protoc --version
+
+
+[Instalar Plugins para o Protocol]
+// Plugin que gera suas "mensagens/entidades"
+> go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
+// Plugin que gera as interfaces de comunicação usando grpc
+> go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+
+[Update your PATH so that the protoc compiler can find the plugins:]
+> export PATH="$PATH:$(go env GOPATH)/bin"
+
+[Criar a configuração de proto]
+> Exemplo na pasta /proto/course_category.proto
+
+[Rodar comando para gerar Proto]
+> protoc --go_out=. --go-grpc_out=. your_service.proto
+> protoc --go_out=. --go-grpc_out=. proto/course_category.proto // Defnido o nosso arquivo proto
+
+[Optional: Rodar gRPC Client com biblioteca do GO pra isso]
+(Colocar "Reflection" no servidor)
+> go install github.com/ktr0731/evans@latest
+> evans -r repl
+> show packages
+> package pb (Escolher o package)
+> show services
+> service CategoryService (Escolher o serviço)
+> call CreateCategory (Escolher o método)
+> Preencher o body
+
+[Se usar o gRPC Client com Stream]
+Após ir inserindo em lista o serviço de stream, para fechar e receber todos os dados
+> Ctrl + D

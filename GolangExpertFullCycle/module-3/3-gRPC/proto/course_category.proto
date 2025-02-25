@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package pb;
+option go_package = "internal/pb";
+
+// Mensagem sem conteúdo, usada para chamadas que não precisam de dados.
+message blank{}
+
+// Define o formato da mensagem Category
+message Category {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+// Mensagem para criação de Category
+message CreateCategoryRequest {
+  string name = 1;
+  string description = 2;
+}
+
+// Lista de categorias, para retornar vários itens
+message CategoryList {
+  repeated Category categories = 1;
+}
+
+message CategoryGetRequest {
+  string id = 1;
+}
+
+// Definição do serviço gRPC com diferentes tipos de RPC, incluindo streams.
+service CategoryService {
+  // Unary: uma requisição, uma resposta.
+  rpc CreateCategory(CreateCategoryRequest) returns (Category) {}
+
+  // Client Streaming: o cliente envia uma sequência de CreateCategoryRequest e o servidor retorna um CategoryList.
+  rpc CreateCategoryStream(stream CreateCategoryRequest) returns (CategoryList) {}
+
+  // Bidirectional Streaming: o cliente envia uma sequência de CreateCategoryRequest e o servidor responde com uma sequência de Category.
+  rpc CreateCategoryStreamBidirectional(stream CreateCategoryRequest) returns (stream Category) {}
+
+  // Outras operações unary para listar e obter categoria.
+  rpc ListCategories(blank) returns (CategoryList) {}
+  rpc GetCategory(CategoryGetRequest) returns (Category) {}
+}
