@@ -1,0 +1,43 @@
+[Doc]
+https://github.com/spf13/cobra
+
+[Adicionar dependencias]
+go get -u github.com/spf13/cobra@latest
+go install github.com/spf13/cobra-cli@latest
+
+[Comandos Principais]
+> cobra-cli init = Gera arquivos iniciais
+
+> cobra-cli add [nomeComando] = Gera um novo arquivo de comando dentro do CMD
+: cobra-cli add category
+
+> go run main.go [nomeComando] = Executa o comando com o main.go pasando o comando como paramêtro
+
+> cobra-cli add [nomeComando] -p '[comandoCmd]' = Cria um novo comando sendo subcomando de um comando existente
+: cobra-cli add create -p 'categoryCmd'
+
+
+> go run main.go [nomeComando] [subComando] = Chama o comando que foi criado como sub comando
+: go run main.go category create
+
+
+
+[Flags]
+Shorthand Flags
+> go run main.go -[shortHand]=[valor]
+: go run main.go category -n=teste
+
+Normalhand Flags
+> go run main.go --[flagName]=[valor]
+: go run main.go category --name=teste
+
+Comandos com Subcomandos e Flags
+> go run main.go [comando] [subcomando] ...flags...
+: go run main.go category create -n=Cat4 -d=Desc4
+
+
+[Geração de Auto-Complete]
+> go run main.go completion = Mostra lista de comandos disponiveis para gerar autocompletion script
+
+> go run main.go completion [nomeComando] = Gera um Script para o Terminal escolhido, que ajuda com auto-complete
+
