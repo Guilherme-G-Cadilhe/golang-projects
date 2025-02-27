@@ -1,0 +1,42 @@
+[Docs]
+- Migrations para todos os bancos com GO
+https://github.com/golang-migrate/migrate
+
+[Instalar o Golang Migrate]
+Windows (Binario pre-compilado):
+- https://github.com/golang-migrate/migrate/releases
+- Baixar o migrate.windows-amd64.zip
+- Extrair em pasta no Disco C e copiar caminho do Bin: 
+> C:\golang-migrate\
+- Abrir "Editar variaveis de Ambiente"
+- Adicionar um novo caminho no arquivo "PATH" usando esse copiado.
+- Reiniciar PC
+- Checar executavel:
+> migrate
+
+
+[Comandos Migrate]
+= Cria um Migrate definindo a extensão, diretorio e o tipo de sequencia ou timestamp
+> migrate create -ext=[db] -dir=[/pasta] -[tipoSequencia] init
+: migrate create -ext=sql -dir=sql/migrations -seq init
+
+= Rodando o migrate UP
+> migrate -path=[pasta] -database "URIdoBanco" -verbose up
+: migrate -path=sql/migrations -database "mysql://root:root@tcp(localhost:3306)/courses" -verbose up
+
+= Rodando o migrate DOWN
+> migrate -path=[pasta] -database "URIdoBanco" -verbose down
+: migrate -path=sql/migrations -database "mysql://root:root@tcp(localhost:3306)/courses" -verbose down
+
+
+[Entrando com no MySQL com oDocker]
+> docker-compose up -d
+> docker-compose exec mysql bash
+> mysql -uroot -p courses
+> root
+> show tables;
+> desc courses; || desc categories;
+
+[Chamando os comandos do arquivo "Makefile"]
+> make [nomeDoComando]
+: make migrate

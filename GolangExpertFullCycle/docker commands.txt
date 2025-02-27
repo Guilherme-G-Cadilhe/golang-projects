@@ -1,0 +1,82 @@
+
+[Comandos Frequentes]
+Liste as imagens do Docker em seu computador
+> docker image ls --all 
+
+
+Todos os containers que estão ativos no momento
+> docker ps 
+
+
+Liste as imagens do Docker em seu computador (sem o sinalizador -a show all, somente contêineres em execução serão exibidos)
+> docker ps -a  ||  docker container ls --all 
+
+
+Listar informações de todo o sistema sobre a instalação do Docker, incluindo estatísticas e recursos (memória de CPU & ) disponíveis para você no contexto do WSL 2
+> docker info
+
+
+Exemplo de inicialização do docker, o RUN sempre cria um novo container
+> docker run(Inicia)--name<nomeContainer>(Nome customizado do container)-d(roda de fundo e é possivel matar o container com ctrl c)-p(especifica ql a porta)8080(porta principal):80(porta que vai ser redirecionada ao acessar a principal)nginx(serviço)
+: docker run --name containerB -d -p 80:80 my_image service nginx start
+
+ 
+
+Inicializa um container pausado/parado
+> docker start<containerId/nome>
+
+
+Para o container ativo passando o ID dele ( docker ps mostra ) ou o Name
+> docker stop<containerId/nome>`
+
+
+Remove o container da lista de containers
+> docker rm<containerId> 
+
+
+Remove a imagem da lista de imagens
+> docker rmi<containerId>
+
+
+Entra dentro do container por terminal, podendo Ler e Alterar os dados enquanto ele executa
+> docker exec -it<nome>bash
+: docker-compose exec mysql bash
+
+
+
+[Dentro da pasta de App com um arquivo Dockerfile configurado]
+Gera uma imagem baseada na pasta com os códigos que você tem na hora de rodar o comando.
+> docker build -t <nomeDaImagem> .(Indica que o Dockerfile está dentro da pasta atual)` 
+
+
+Envia a imagem para o repositório do site e salva ela
+> docker push<nomeDaImagem>
+
+
+[Dentro da pasta de App com um arquivo compose.yaml configurado:]
+Docker procura um docker-compose na pasta, e inicializa com as configurações setadas no mesmo
+> docker compose up
+
+
+[Alguns dos comandos mais utilizados do Docker compose são:]
+
+Inicia a execução dos containers definidos no arquivo compose.yaml;
+> docker compose up
+
+> docker compose up -d = Inicia a execução dos containers no modo detached (desanexado), ou seja, em segundo plano
+
+> docker compose up --force-recreate = Força a recriação dos containers antes de iniciar a execução
+
+> docker compose -f <CAMINHO DO ARQUIVO.yaml> up = Permite executar um arquivo que está em um diretório diferente
+
+> docker compose down = Encerra a execução dos containers e os destrói;
+
+> docker compose -f <CAMINHO DO ARQUIVO.yaml> down = Encerra a execução do Container especificado e o destrói;
+
+> docker compose stop = Pausa a execução dos containers sem destruí-los;
+
+> docker ps = Lista os containers que estão em execução;
+
+> docker ps -a = Lista todos os containers;
+
+> docker logs <NOME DO CONTAINER> = Retorna os logs que aconteceram no container.

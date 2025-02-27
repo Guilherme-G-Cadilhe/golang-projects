@@ -1,0 +1,50 @@
+[Doc]
+https://sqlc.dev/
+
+[Instalação]
+> go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+> sqlqc version
+
+[Config Inicial]
+Criar um "sqlc.yaml" com as configurações:
+version: "2"
+sql:
+  - schema: "sql/migrations"
+    queries: "sql/queries"
+    engine: "mysql"
+    gen:
+      go:
+        package: "db"
+        out: "internal/db"
+        overrides:
+          - db_type: "decimal"
+            go_type: "float64"
+
+
+
+[Comandos]
+Gera os Modelos, Queries e o DB baseado no Schema e nas Querys definidas
+> sqlc generate
+
+
+
+[Criação de Query]
+No arquivo de querys "query.sql", criar as queries com anotações do sqlc
+>
+-- name: ListCategories :many
+SELECT * FROM categories;
+
+
+-- name: GetCategory :one
+SELECT * FROM categories 
+WHERE id = ?;
+
+-- name: CreateCategory :execresult (Executa e trás o resultado)
+INSERT INTO categories (id, name, description) 
+VALUES (?, ?, ?);
+
+-- name: CreateCategory :exec (Só executa)
+INSERT INTO categories (id, name, description) 
+VALUES (?, ?, ?);
+
+<
