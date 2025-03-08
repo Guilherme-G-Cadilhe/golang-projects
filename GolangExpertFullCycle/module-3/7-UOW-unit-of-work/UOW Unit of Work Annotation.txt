@@ -1,0 +1,22 @@
+UOW -> Unit of Work
+
+BEGIN
+Transacao 1 -> Repo 1
+Transacao 2 -> Repo 2
+COMMIT / ROLLBACK
+
+-> Repositorios -> UOW -> getRepository -> Repositorio(TX) | TX = Transaction
+
+Register
+UnRegister
+getRepository
+DO( fn func(uow unitOfWork) error) error {
+    BEGIN
+    Transacao 1 -> Repo 1
+    Transacao 2 -> Repo 2
+    COMMIT / ROLLBACK
+
+}
+
+fn(uow)
+ 
