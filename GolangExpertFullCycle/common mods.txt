@@ -1,3 +1,24 @@
+====[Cloud]====
+- AWS
+:github.com/aws/aws-sdk-go
+
+
+
+====[CLI]====
+- Cobra
+:go get -u github.com/spf13/cobra@latest
+:go install github.com/spf13/cobra-cli@latest
+
+
+
+====[Communication Http]====
+- gRPC
+:google.golang.org/protobuf/cmd/protoc-gen-go@latest
+:google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+:github.com/ktr0731/evans@latest
+
+
+
 ====[Handlers Http]====
 - Gorilla/mux (router)
 - go-chi (router mais popular)
@@ -7,6 +28,8 @@
 - Gin golang (web framework)
 
 - Buffalo (eco-system: estilo Rails,Django, etc)
+
+
 
 ====[ Auth HTTP]====
 - JsonWebToken
@@ -18,7 +41,12 @@
 - Crypto (Criptografia)
 :golang.org/x/crypto
 
+
+
 ====[Bancos de Dados e Mensageria]====
+- SQLITE3
+:github.com/mattn/go-sqlite3
+
 - GORM + GORM SQLITE3
 :gorm.io/gorm
 :gorm.io/driver/sqlite
@@ -26,12 +54,33 @@
 - RabbitMQ
 :github.com/rabbitmq/amqp091-go
 
+- GraphQL
+:github.com/99designs/gqlgen
+:github.com/99designs/gqlgen/graphql/introspection
+
+- Migrate
+:github.com/golang-migrate/migrate
+
+- SQLC
+:go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+
+
+====[Depdency Injection]====
+- GOOGLE WIRE
+:github.com/google/wire/cmd/wire@latest
+
+
+
 ====[Chaves ENV]====
 - Viper
+
+
 
 ====[Testes]====
 - Testify
 :github.com/stretchr/testify
+
 
 
 ====[Doc]====

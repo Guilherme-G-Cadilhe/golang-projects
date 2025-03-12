@@ -1,0 +1,41 @@
+[Mod 1]
+- FX
+https://github.com/uber-go/fx
+https://uber-go.github.io/fx/get-started/
+
+- O que é Reflection?
+: Quando através de uma LIB você consegue pegar objetos, entender oque acontece com eles em tempo de execução
+
+[FX]
+Trabalha com "Reflections" (Quando você coloca uma dependencia, ele vê que a dependência é de um determinado tipo e infere qual será o objeto daquele tipo por "Reflection" e então faz a criação do objeto)
+
+-------------
+[Mod 2]
+- Wire
+https://github.com/google/wire
+https://github.com/google/wire/blob/main/_tutorial/README.md
+https://github.com/google/wire/blob/main/docs/guide.md
+
+[Wire]
+Trabalha gerando código que automatiza a conexão de componentes usando Dependencia de Injeção.
+
+[Criar arquivo wire.go]
+- Definir as dependencias (Ver Exemplo)
+- colocar no topo do arquivo:
+<
+//go:build wireinject
+//+build wireinject
+>
+(Define os paramêtros que vão ser passados no programa de build do Wire)
+
+[Executando Wire]
+No terminal digite
+: wire
+(Gera arquivo 'wire_gen.go')
+
+Para recriar o arquivo
+:go generate
+
+[Rodando main.go]
+Tem que rodar o main.go e o wire_gen.go juntos
+:go run main.go wire_gen.go
