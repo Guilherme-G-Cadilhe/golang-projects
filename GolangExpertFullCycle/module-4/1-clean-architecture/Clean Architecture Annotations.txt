@@ -1,0 +1,121 @@
+Glossario:
+1. INTRODUÇÃO
+2. ARQUITETURA
+ 1.1 Pontos importantes
+ 1.2 Objetivo
+ 1.3 Regras vs Detalhes
+ 1.4 Limites arquiteturais
+ 1.5 DTO (Data Transfer Object)
+ 1.6 Presenters (De_Para)
+3. TRABALHAR COM CASOS DE USO
+
+1. ======== INTRODUÇÃO ======
+[Origem da Clean Architecture]
+- Termo criado por Robert C. Martin (Uncle Bob) em 2012
+- Tornou-se um livro
+- Buzz word
+- Proteção do domínio da aplicação
+- Baixo acoplamento entre as camadas
+- Orientada a casos de usos (A Intenção de conseguir realizar uma ação que gere uma transformação no código)
+
+
+[Por que ler o livro?]
+- Reforçar conhecimento e remover gaps básicos que muitas vezes nem percebemos que temos
+- Componentes
+- Arquitetura
+- Limites arquiteturais
+- Percepção sobre regras de negócios
+- Beber água direto da fonte sempre importa
+
+
+
+2. ========== ARQUITETURA ============
+[ Pontos importantes ]
+- Formato que o software terá
+- Divisão de componentes
+- Comunicação entre componentes
+- Uma boa arquitetura vai facilitar o processo de desenvolvimento, deploy, operação e manutenção
+- "The strategy behind the facilitation is to leave as many options open as possible, for as long as possible."
+
+
+[ Objetivo ]
+- O objetivo da arquitetura é dar suporte ao ciclo da vida do sistema. Uma boa arquitetura torna o sistema facil de entender, facil de desenvolver, fácil de manter e fácil de implantar. O objetivo final é minimizar o custo de vida útil do sistema e maximizar a produtividade do programador.
+
+
+[ Regras vs Detalhes ]
+- Regras de negócio trazem o real valor para o software
+- Detalhes ajudam a suportar as regras
+- Detalhes não devem impactar nas regras de negócio
+- Frameworks, banco de dados, apis, não devem impactar as regras
+
+
+[Limites arquiteturais]
+- Tudo que não impacta diretamente nas regras de negócio deve estar em um limite arquitetural diferente. Ex: Não será o frontend, banco de dados que mudarão as regras de negócio da aplicação.
+
+[DTO (Data Transfer Object)]
+- Trafegar dados entre os limites arquiteturais
+- Objeto anêmico, sem comportamento
+- Contém dados (Input ou Output)
+- NÂO possui regras de negócio
+- NÂO possui comportamento
+- NÂO faz nada!
+- API -> CONTROLLER -> USE CASE -> ENTITIY
+> Controller cria um DTO com os dados recebidos e envia para o Use Case
+> Use Case executa fluxo, pega o resultado, cria um DTO para Output e retorna para o Controller
+
+
+[Presenters (De_Para)]
+- Objetos de transformação ( De_Para )
+- Adequa o DTO de output no formato correto para entregar o resultado
+- Lembrando: Um sistema pode ter diversos formatos de entrega: ex: XML, JSON, Protobuf, GraphQL, CLI, etc.
+<- 
+input = new CategoryInputDTO("name");
+output = CreateCategoryUseCase(input);
+jsonResult = CategoryPresenter(output).toJson();
+xmlResult = CategoryPresenter(output).toXml();
+->
+
+
+[Entities]
+- Entities da Clean Architecture são diferentes de Entities do DDD
+> CA = Define como camada de regras de negócio
+> DDD = Representação de algo único na aplicação, parte de um agregado
+- Elas se aplicam em qualquer situação
+- Não há definição explicita de como criar as entities
+- Normalmente utilizamos táticas do DDD
+- Entities = Agregados + Domain Services
+
+
+
+
+3. ========== TRABALHAR COM CASOS DE USO ============
+[ Use Cases ]
+- Intenção
+- Clareza de cada comportamento do software
+- Detalhes não devem impactar nas regras de negócio
+
+
+[SRP (Single Responsability Principle)]
+- Temos a tendência de "reaproveitar" use cases por serem muito parecidos.
+- Ex: Alterar vs Inserir. Ambos consultam se o registro existe, persistem dados. MAS, são Use Cases diferentes. Por que?
+- SRP (Single Responsability Principle) => Mudam por razões diferentes
+- DRY só se aplica caso uma função seja copiada e colada muitas vezes, para o mesmo tipo de intenção
+
+
+[Use Cases contam uma história]
+Gather Contact Info for New Loan
+input: Name, Address, Birthdate, DL, SSN, etc.
+Output: Same info for readback + Credit score.
+
+Primary course:
+1. Accept and validate name.
+2. Validate address, Birthdate, DL,M,SSN, etc.
+3. Get credit score
+4. If credit score is < 500 activate Denial
+5. Else create Customer and activate Loan Estimation
+
+
+[ Input vs Output ]
+- No final do dia, tudo se resume a um input que retorna um Output
+- Ex: Criar um pedido (Dados do pedido = input) => Pedido criado (Dados de retorno do pedido)
+- Simplifique seu reaciocínio ao criar um software sempre pensando em Input e Output

@@ -1,0 +1,81 @@
+[Dockerfile De Dev]
+- Definindo na pipeline CMD dummy apenas para manter o container em pé (Não faz nada)
+- Com isso, é possível entrar no Container e trabalhar internamente como se estivesse em uma maquina com GO instalado
+> CMD ["tail", "-f", "/dev/null"]  = Fica escutando na pasta /dev/null que não existe
+
+- Criando imagem basead em Dockerfile
+( -t = (nome e opcionalmente tag [name:tag]) -f = Caminho do Dockerfile  . = Local de destino do build)
+> docker build -t meuNome:latest -f Dockerfile.prod .
+
+- Verificando tamanho e dados de imagens geradas
+> docker images | grep nomeImage
+
+- Rodar imagen geradas
+> docker run --rm -p 8080:8080 nomeImagem:latest
+
+- Deploy no docker hub
+> docker push nomeContainer
+
+
+
+[Docker Compose]
+- Criar um serviço apontando para o Dockerfile no mesmo diretorio "."
+- Definir a porta do server sendo a mesma do container 8080:8080
+- Definir uma pasta para ser a de alterações compartilhadas, qualquer alteração lá é refletida
+
+- Entrar no Container para programar em GO
+> docker-compose exec goapp bash = (Entra no bash do container)
+> go run main.go = Roda o GO dentro do container
+
+
+
+[Build]
+-Criando Binario executavel
+> go build . = Cria binario para o sistema operacional atual, com o nome da pasta
+> ./nomeDoArquivo = Executa o binario
+
+- Define o OS do binario
+> GOOS=linux go build . = Executavel para linux
+> GOOS=darwin go build . = Executavel para mac
+> GOOS=windows go build . = Executavel para windows
+
+- Define o nome do executavel que vai ser gerado (Padarão é o nome da pasta atual)
+> go build -o nomeApp .
+
+- Diminuindo o tamanho do binario retirando DWARF (Debugging with arbitrary record format)
+> go build -ldflags="-w -s" . = Remove simbolos e métodos de Profilling
+
+
+- Desativa dependencia de C caso o aplicativo não use nenhuma lib
+> CGO_ENABLED=0 go build .
+
+
+
+[Rodando Kubernetes localmente com Kind]
+Kind é uma ferramenta para rodar Clusters de Kubernetes localmente
+https://kind.sigs.k8s.io/
+
+- Instalar
+> sigs.k8s.io/kind@v0.27.0 && kind create cluster
+
+- Criar Cluster
+> kind create cluster --name=nomeCluster
+
+- Usar o comando gerado na criação do cluster para entrar no contexto do cluster
+> kubectl cluster-info --context kind-nomeCluster
+
+- Listar nodes
+> kubectl get nodes
+
+- Criar seu 'deployment.yaml' com as configurações do kubernetes e aplicar
+> kubectl apply -f k8s/deployment.yaml
+
+- Olhar os pods criados
+> kubectl get pods
+
+- Criar seu 'service.yaml' para definir o tipo de serviço e aplicar
+(Todo mundo que acessar passa pelo service, e ele direciona os pods)
+> kubectl apply -f k8s/service.yaml
+
+- Abrir porta externa para acessar
+> kubectl port-foward svc/nomeDoServiço 8080:8080
