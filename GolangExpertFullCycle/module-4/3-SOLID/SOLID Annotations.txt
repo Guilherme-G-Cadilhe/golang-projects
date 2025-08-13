@@ -1,0 +1,133 @@
+
+[Erros principais]
+- Rigidez: Incapacidade de mudar uma linha de código em um modulo sem ter que mudar varios outros em todo o sistema e perder semanas fazendo isso.
+
+- Fragilidade: dependencias escondidas que fazem o sistema quebrar de formas inexplicaveis, mudando uma linha aqui e quebra algo em outra ponta que teoricamente nunca deveria quebrar.
+
+- Imobilidade: É ter o desejo de reutilizar modulos em outros sistemas e outras formas, mas estão tão interconectados que é impossivel de reutiliza-los, não sendo possivel serem reutilizaveis.
+
+
+[Soluções]
+- Inversão de Dependencias: Separar os modulos de forma que não tenham dependencias através de separações de preocupações.
+
+> Dependecia Errada: UM modulo principal no topo, com modulos de posição alta, que invocam posições mais baixas, que estes invocam outros de posições mais baixas ainda e no final o primeiro modulo depende de 1000 pequenos modulos que vem por herança de árvore hierarquica. (Utilizando "imports")
+
+> Dependencia Correta: Usando programação orientada a objetos, podemos ter a criação de uma interface polimorfica (Ou classe abstrata), onde pegamos dependencia de códigos fontes e invertemos eles, criando modulos genericos que podem ser reutilizados.
+
+
+[Aplicar principios de design de classes]
+The Single Responsibility Principle - S
+The Open/Closed Principle - O
+The Liskov Substitution Principle - L
+The Interface Segregation Principle - I
+The Dependency Inversion Principle - D
+S - O - L - I - D
+
+[ Aplicar o código do escoteiro ]
+- Sempre deixar o código mais limpo do que quando você o encontrou
+> Nunca refaça todo o sistema, simplesmente trabalhe em ciclos e toda vez que você tocar nele e antes de sair, faça um ajuste pequeno e o deixe mais limpo do que estava antes.
+
+[ Suite de Testes ]
+- Eles não são a resposta para lutar contra sistemas frageis, mas são UMA das formas de você começar a fazer mudanças de design que gradualmente irão eliminar a fragilidade. Por que te permite ter a confiança de modificar o código, com você sabendo se irá quebrar ou não.
+
+[ Diferença entre Design, Arquitetura e Programação ]
+- São pontas da mesma coisa, que é desenvolvimento de software, ao subir nessa continuidade você vai de código, para design e para arquitetura
+
+
+=======================[S - O - L - I - D]=======================================
+
+====== 1. SRP - THE SINGLE RESPONSIBILITY PRINCIPLE
+> Uma classe ou modulo deve ter uma e somente uma razão para mudar
+> Um ator que é a fonte dessa mudança (Usuários fazem o software mudar)
+| Exemplo:
+<>
+Employee Class
++ calculatePay()   // Importante para o CFO da empresa
++ save()           // Importante para o CTO da empresa
++ printReport()    // Importante para o COO da empresa
+</>
+- Quais razões essa classe teria para mudar?
+> Os Contadores provavelmente teriam razões, para mudar a função de pagamento e isso remete diretamente o CFO.
+> O RH que reporta diretamente ao COO (Chefe oficial de operações) poderia precisar de mudança na forma de imprimir o report
+> O DBA pode precisar de mudanças na forma de salva, mudando schemas e tabelas, e reportam para o Chefe Técnico principal (CTO)
+
+- Não deixe funções que são pertencentes a diferentes responsabilidades existirem no mesmo modulo
+
+| Solução 1
+> Criar uma fachada, onde a classe de funcionario ainda tem todas as funções nela, mas não implementa nenhuma, apenas delega para pequenas classes de serviço, tendo uma classe de serviço para calcular pagamento, outra para salvar no banco de dados, outra para imprimir o relatorio e assim por diante.
+
+| Solução 2
+> Dividir responsabilidades
+
+Employee Class
++ CalculatePay()
++ getters
+
+> Employee Gateway Class
++ save(Employee)
+
+> Employee Report Generator Class
++ printReport(Employee)
+
+
+
+====== 2. OCP - THE OPEN-CLOSED PRINCIPLE
+> Um artefato de software deve estár ABERTO para extensões mas FECHADO para modificações
+> Você deve poder mudar o que o modulo faz (Resultado final), mas sem modificar o modulo (Base)
+> Você faz isso separando a dependencia de level alto e tendo certeza que as dependencias fontes nos modulos de level mais baixo estão invertidos para apontar para abstrações, e os modulos de level alto também estão apontados a abstrações
+> Quanto mais perto das regras de negocio, menos ela deve mudar, e quanto mais baixo, mais perto dos pequenos detalhes e mais provavel que eles mudem.
+> Mais alto é mais fechado, e o mais baixo é mais aberto, e o meio fica entre os dois
+| Exemplo 1 Basico
+<>
+void Copy()
+{
+  int    // Função generica que utiliza a função passada de receber string e devolve 
+         //em um função para colocar string
+  while ( (c=getchar()) != EOF ) 
+  putchar(c)
+}
+</>
+
+| Exemplo 2
+<>
+interface Reader
+{ char read(); }
+interface Writer
+{ void write(char c); }
+
+public class Copy {
+  private Reader itsReader;
+  private Writer itsWriter;
+
+  Copy(Reader r, Writer w)
+  {
+    itsReader = r;
+    itsWriter = w;
+  }
+  public void copy() {
+    int c;
+    while( (c := itsReader.read()) != EOF) {
+      itsWriter.write(c)
+    }
+  }
+}
+</>
+
+
+====== 3. LSP - THE LISKOV SUBSTITUTION PRINCIPLE
+> Se o usuário usa uma função que tem um resultado definido, permitir que essa função seja substituida por outra, que o resultado seja igual e que o usuário não sinta a mudança
+> Objetos de uma classe derivada devem poder substituir objetos da classe base sem alterar o comportamento esperado.
+> Se temos uma classe, e dessa classe criamos uma subclasse utilizando herança, o objeto ou instancia resultante, tem que conseguir substituir a classe principal sem quebrar o programa.
+
+====== 4. ISP - THE INTERFACE SEGREGATION PRINCIPLE
+> Uma classe deve realizar apenas ações necessárias para cumprir sua função. Qualquer outra ação deve ser removida completamente ou movida para outro lugar se puder ser usada por outra classe no futuro.
+> Prefira várias interfaces específicas a uma única interface “gorda”. Classes que não usam certos métodos não precisam implementá-los, reduzindo acoplamento e código “vazio”.
+
+
+====== 5. DIP - THE DEPEDENCY INVERSION PRINCIPLE
+> Módulos de alto nível não devem depender de módulos de baixo nível; ambos devem depender de abstrações (interfaces). Abstrações não devem depender de detalhes, detalhes devem depender de abstrações.
+
+
+
+
+  

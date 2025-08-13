@@ -1,0 +1,54 @@
+=====================================
+  O QUE É UMA THREAD?
+=====================================
+- É a menor unidade de execução que o SO pode gerenciar.
+- Uma "linha de execução" ou um "caminho" que o código pode seguir dentro de um processo.
+- Um processo começa com uma única thread (a "main thread") e pode criar outras para executar tarefas em paralelo ou de forma concorrente.
+
+
+-------------------------------------
+  PROCESSOS vs. THREADS (RECAP)
+-------------------------------------
+
+  RECURSO             | PROCESSOS                     | THREADS
+--------------------------------------------------------------------------
+  Memória             | ISOLADA (cada um tem a sua)   | COMPARTILHADA (dentro do mesmo processo)
+  Comunicação         | LENTA (via SO: pipes, sockets)| RÁPIDA (acesso direto a variáveis)
+  Criação/Troca       | LENTA e CUSTOSA               | RÁPIDA e LEVE
+  Falha               | Um trava, os outros não       | Uma trava, o processo inteiro pode travar
+
+
+-------------------------------------
+  ANATOMIA DE UMA THREAD
+-------------------------------------
+- O que uma thread TEM SÓ PARA ELA:
+  * Stack (Pilha): Para suas variáveis locais e chamadas de função. É ISOLADA.
+  * Registradores da CPU: Incluindo o Program Counter (PC), que aponta para a instrução atual.
+
+- O que uma thread COMPARTILHA com outras threads do mesmo processo:
+  * Heap (Memória Dinâmica): Onde objetos e dados são alocados.
+  * Código do Programa: Todas executam o mesmo código-fonte.
+  * Dados Globais: Variáveis globais são visíveis para todas.
+  * Recursos do SO: Descritores de arquivos, conexões de rede, etc.
+
+
+-------------------------------------
+  CONCORRÊNCIA vs. PARALELISMO
+-------------------------------------
+- CONCORRÊNCIA: Lidar com várias coisas ao mesmo tempo.
+  * Em um único núcleo de CPU, as tarefas são alternadas rapidamente, criando a ILUSÃO de simultaneidade.
+  * Ex: Um chef de cozinha que corta legumes, mexe a panela e vigia o forno. Ele está lidando com tudo, mas focando em uma coisa de cada vez.
+
+- PARALELISMO: Fazer várias coisas ao mesmo tempo.
+  * Requer múltiplos núcleos de CPU. Duas ou mais tarefas rodam literalmente no mesmo instante.
+  * Ex: Dois chefs (dois núcleos) cozinhando dois pratos diferentes ao mesmo tempo.
+
+✅ Concorrência é sobre ESTRUTURA, paralelismo é sobre EXECUÇÃO. Go é excelente para estruturar código concorrente, que pode ou não ser executado em paralelo.
+
+
+-------------------------------------
+  O GRANDE DESAFIO: RACE CONDITIONS (CONDIÇÕES DE CORRIDA)
+-------------------------------------
+- Ocorre quando duas ou mais threads tentam acessar e modificar o mesmo recurso de memória ao mesmo tempo.
+- O resultado final depende da ordem "da sorte" em que as threads são executadas, levando a resultados imprevisíveis e bugs difíceis de rastrear.
+- SOLUÇÃO:

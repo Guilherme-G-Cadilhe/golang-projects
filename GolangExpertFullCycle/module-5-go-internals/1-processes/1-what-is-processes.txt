@@ -1,0 +1,96 @@
+=====================================
+ O QUE É UM PROCESSO?
+=====================================
+- É uma instância de um programa em execução, gerenciada pelo Sistema Operacional (SO).
+- Cada processo possui um espaço de memória dedicada (endereçamento próprio), permitindo sua execução isolada de outros processos.
+- O SO mantém informações do processo através de um CONTEXTO, permitindo pausá-lo e retomá-lo (Context Switch).
+
+
+-------------------------------------
+ COMPONENTES DE UM PROCESSO
+-------------------------------------
+
+1) ENDEREÇAMENTO
+   - Região de memória dedicada ao processo.
+   - Inclui: código, dados globais, heap, stack e bibliotecas carregadas.
+
+----------------------------
+2) CONTEXTO
+   - Conjunto de informações salvas pelo SO para gerenciar e retomar o processo.
+   - Inclui:
+       * Program Counter (PC) ou Instruction Pointer (IP) → Endereço da próxima instrução a ser executada
+       * Estado dos registradores da CPU → Valores temporários necessários para a execução.
+       * Informações de controle → Priorização, permissões, estado (executando, pronto, bloqueado).
+
+----------------------------
+3) REGISTRADORES DA CPU
+   - Pequenas áreas no processador que armazenam dados temporários.
+   - Exemplos:
+       * Registradores de Dados → Operações aritméticas/lógicas
+       * Registradores de Endereços → Guardam referências para posições na memória (ex.: Stack Pointer)
+
+----------------------------
+4) HEAP
+   - Área de alocação dinâmica de memória (new/malloc).
+   - Pode crescer ou diminuir durante a execução.
+
+----------------------------
+5) STACK
+   - Estrutura LIFO (último a entrar, primeiro a sair).
+   - Guarda dados de chamadas de função, parâmetros e endereços de retorno.
+
+----------------------------
+6) REGISTROS DE STATUS / FLAGS
+   - Indicam resultados de operações da CPU:
+       * Zero Flag (Z) → Resultado foi zero
+       * Negative Flag (N) → Resultado negativo
+       * Overflow Flag (O) → Resultado excedeu a capacidade do registrador
+
+
+-------------------------------------
+ CICLO DE VIDA DE UM PROCESSO
+-------------------------------------
+  1) Novo (Created) → Processo é criado pelo SO.
+  2) Pronto (Ready) → Esperando CPU para executar.
+  3) Executando (Running) → CPU processa as instruções.
+  4) Bloqueado (Waiting) → Aguardando recurso externo (I/O, sinal, etc.).
+  5) Finalizado (Terminated) → Processo encerrado.
+
+
+-------------------------------------
+ Relação com Go
+-------------------------------------
+- Em Go, cada programa executado (`go run main.go`) é um processo.
+- Dentro dele, cada goroutine é como uma "thread leve" executando em paralelo dentro do mesmo processo.
+- O SO gerencia processos, enquanto o runtime do Go gerencia goroutines dentro de um processo.
+
+
+-------------------------------------
+ GO x NODE.JS (COMPARAÇÃO)
+-------------------------------------
+  Processo       → Programa em execução (ambos)
+  Thread Principal → Goroutine principal (Go) | Event Loop (Node)
+  Threads Internas → Múltiplas goroutines (Go) | Thread pool (libuv - Node)
+
+
+-------------------------------------
+ DICAS RÁPIDAS
+-------------------------------------
+✅ Cada processo é isolado → Comunicação via pipes, sockets, arquivos.
+✅ Context Switch → CPU alterna entre processos (multitarefa).
+✅ Go usa múltiplas goroutines dentro de UM processo.
+
+
+-------------------------------------
+ EXEMPLO EM GO (CRIANDO PROCESSO FILHO)
+-------------------------------------
+package main
+import (
+    "fmt"
+    "os/exec"
+)
+func main() {
+    cmd := exec.Command("echo", "Olá, processo externo!")
+    output, _ := cmd.CombinedOutput()
+    fmt.Println(string(output))
+}

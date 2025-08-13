@@ -1,0 +1,119 @@
+=====================================
+  GERENCIAMENTO DE PROCESSOS: O SCHEDULER
+=====================================
+- É o componente central do Sistema Operacional (SO) responsável por gerenciar a execução de processos.
+- Pense nele como o "maestro" da CPU, decidindo qual processo ganha o direito de ser executado, quando e por quanto tempo.
+- Principal objetivo: Maximizar o uso da CPU e dar a sensação de que vários programas estão rodando ao mesmo tempo (multitarefa).
+
+
+-------------------------------------
+  PRINCIPAIS OBJETIVOS DO SCHEDULER
+-------------------------------------
+- Além de manter a CPU ocupada, um bom scheduler tenta equilibrar:
+  * Fairness (Justiça): Garantir que todo processo tenha sua chance de ser executado.
+  * Throughput (Vazão): Maximizar o número de processos concluídos em um período de tempo.
+  * Response Time (Tempo de Resposta): Minimizar o tempo entre uma ação do usuário e a resposta do programa (essencial para interfaces gráficas).
+  * Turnaround Time: Minimizar o tempo total desde a criação do processo até sua finalização.
+
+
+-------------------------------------
+  TIPOS DE SCHEDULING
+-------------------------------------
+
+1) COOPERATIVO / COLABORATIVO
+   - O processo em execução tem controle total da CPU.
+   - Ele só libera a CPU VOLUNTARIAMENTE (quando termina ou quando entra em um estado de espera, como I/O).
+   - Prós: Simples de implementar, baixo overhead (poucas trocas de contexto).
+   - Contras: Um único processo mal comportado (em loop infinito) pode TRAVAR todo o sistema, monopolizando a CPU.
+   - Relevância: Usado em sistemas antigos (ex: Windows 3.1) ou em contextos muito específicos e controlados.
+
+----------------------------
+2) PREEMPTIVO
+   - O SO tem total controle e pode INTERROMPER (pausar) um processo a qualquer momento para dar a vez a outro.
+   - Essa interrupção é baseada em um "quantum" de tempo ou em prioridades.
+   - Prós: Mais justo e robusto. Impede que um processo monopolize a CPU, mantendo o sistema responsivo.
+   - Contras: Gera mais overhead devido às trocas de contexto (Context Switching).
+   - Relevância: É o padrão em TODOS os sistemas operacionais modernos (Linux, Windows, macOS).
+
+
+-------------------------------------
+  O CUSTO DA PREEMPÇÃO: CONTEXT SWITCH
+-------------------------------------
+- É o processo de salvar o "estado" (contexto) de um processo que está sendo pausado e carregar o estado de um novo processo que vai começar a rodar.
+- O que é salvo? Program Counter, valores dos registradores, etc.
+- É uma operação CUSTOSA. Um excesso de trocas de contexto pode degradar a performance, pois a CPU gasta tempo gerenciando em vez de executando código útil.
+
+
+-------------------------------------
+  RELAÇÃO COM GO: OS SCHEDULER vs. GO SCHEDULER
+-------------------------------------
+- Este é um ponto CRUCIAL em Go!
+- O *OS Scheduler* agenda THREADS do sistema para rodar na CPU.
+- O *Go Scheduler* agenda GOROUTINES para rodar nas THREADS do sistema.
+- Go usa um modelo M:N -> Mapeia M goroutines para rodar em N threads do SO (onde N é geralmente pequeno, próximo ao número de núcleos da CPU).
+- VANTAGEM: Criar e trocar o contexto de uma GOROUTINE é MUITO mais barato e rápido do que criar/trocar uma THREAD do SO. O Go Scheduler é um scheduler PREEMPTIVO e otimizado para as goroutines, fazendo o Go ser extremamente eficiente em concorrência.
+
+
+-------------------------------------
+  GO x NODE.JS (COMPARAÇÃO)
+-------------------------------------
+- A diferença aqui é fundamental para entender a performance de ambos.
+
+  Node.js (Event Loop):
+  - Opera de forma PARECIDA com um scheduler COOPERATIVO no nível da aplicação.
+  - O Event Loop roda em UMA ÚNICA thread principal.
+  - Uma tarefa de JS (ex: um `for` loop gigante) que demora para executar irá BLOQUEAR o Event Loop inteiro. Nenhuma outra tarefa JS poderá rodar até que ela termine ou ceda o controle (ex: com um `await`).
+  - Tarefas de I/O são delegadas para uma "thread pool", liberando o Event Loop.
+
+  Go (Go Scheduler):
+  - Opera de forma PREEMPTIVA no nível da aplicação.
+  - O Go Scheduler pode "pausar" uma goroutine que está demorando muito para dar a vez a outra.
+  - Isso significa que uma goroutine mal comportada não trava todas as outras. O Go distribui o trabalho entre as threads disponíveis de forma muito mais eficiente.
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Scheduler do SO: Gerencia PROCESSOS/THREADS. É PREEMPTIVO em sistemas modernos.
+✅ Scheduler Cooperativo: O processo libera a CPU. Risco de monopólio.
+✅ Scheduler Preemptivo: O SO força a liberação da CPU. Mais justo e robusto.
+✅ Context Switch: O "preço" da preempção. Salvar e carregar o estado de um processo.
+✅ Go Scheduler: Um scheduler PREEMPTIVO, leve e rápido que gerencia GOROUTINES dentro das threads do SO. É o segredo da concorrência em Go.
+
+
+-------------------------------------
+  EXEMPLO EM GO (ILUSTRANDO A CONCORRÊNCIA)
+-------------------------------------
+// Este código não mostra o scheduler, mas ilustra seu EFEITO.
+// Lançamos várias goroutines e o Go Scheduler as gerencia para que
+// pareçam rodar "ao mesmo tempo", mesmo em uma única thread do SO.
+package main
+
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+
+func main() {
+    // WaitGroup é usado para esperar que todas as goroutines terminem
+    var wg sync.WaitGroup
+
+    // Lança 3 goroutines
+    for i := 1; i <= 3; i++ {
+        wg.Add(1) // Adiciona 1 ao contador do WaitGroup
+
+        go func(id int) {
+            defer wg.Done() // Decrementa o contador quando a goroutine terminar
+
+            for j := 0; j < 5; j++ {
+                fmt.Printf("Eu sou a goroutine %d, impressão %d\n", id, j)
+                time.Sleep(10 * time.Millisecond) // Pequena pausa para ver a alternância
+            }
+        }(i)
+    }
+
+    // Espera até que o contador do WaitGroup chegue a zero
+    wg.Wait()
+    fmt.Println("Todas as goroutines terminaram.")
+}

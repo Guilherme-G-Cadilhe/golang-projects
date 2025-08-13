@@ -1,0 +1,42 @@
+============================
+ CICLO DE VIDA DE UM PROCESSO
+============================
+
+1) CREATION (CRIAÇÃO)
+   - Processo é criado quando o SO recebe uma chamada para executá-lo.
+   - Exemplos:
+       * fork() no UNIX/Linux
+       * CreateProcess() no Windows
+
+----------------------------
+
+2) READY (PRONTO)
+   - Processo está carregado na memória e AGUARDA a CPU.
+   - Pode alternar rapidamente entre READY e RUNNING.
+
+----------------------------
+
+3) EXECUTION (EXECUÇÃO)
+   - CPU está executando as instruções do processo.
+   - Se for interrompido pelo SO, volta para READY.
+
+----------------------------
+
+4) WAITING / BLOCKED (ESPERA)
+   - Processo fica suspenso aguardando um evento externo.
+   - Exemplos:
+       * Esperando I/O (leitura de arquivo, rede)
+       * Esperando sinal de outro processo
+
+----------------------------
+
+5) TERMINATION (FINALIZAÇÃO)
+   - O processo finaliza sua execução.
+
+   Formas de terminar:
+       - EXIT: finalizou com sucesso
+       - KILLED: encerrado por erro ou comando externo (kill, falha etc.)
+
+============================
+ FLUXO RESUMIDO
+ New → Ready → Running → (Waiting 

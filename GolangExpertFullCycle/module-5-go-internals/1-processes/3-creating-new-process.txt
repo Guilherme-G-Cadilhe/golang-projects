@@ -1,0 +1,117 @@
+=====================================
+  CRIAÇÃO DE PROCESSOS (UNIX/LINUX)
+=====================================
+- O modelo clássico em sistemas UNIX-like (Linux, macOS) para criar um novo processo envolve duas chamadas de sistema distintas: fork() e exec().
+
+
+-------------------------------------
+  PASSO 1: O CLONE -> fork()
+-------------------------------------
+- A chamada `fork()` cria um novo processo CLONANDO o processo que a chamou (o processo "pai").
+- O processo gerado é o "filho".
+- O filho é uma cópia quase idêntica do pai:
+    * Herda o mesmo código.
+    * Recebe uma CÓPIA do estado da memória do pai (stack, heap, variáveis).
+- PONTO-CHAVE: Após o `fork()`, pai e filho são processos INDEPENDENTES. Alterar uma variável no filho NÃO afeta a mesma variável no pai, pois eles têm espaços de memória separados.
+
+----------------------------
+  COMO ELES SE DIFERENCIAM? -> O RETORNO DO fork()
+----------------------------
+- A chamada `fork()` retorna um PID (Process ID), que é um número inteiro. O código usa esse valor para saber se está sendo executado no processo pai ou no filho.
+
+    * NO PROCESSO PAI: Retorna o PID do processo filho recém-criado (um número positivo).
+    * NO PROCESSO FILHO: Retorna 0.
+    * SE OCORRER UM ERRO: Retorna um número negativo.
+
+- Exemplo de lógica:
+  `pid := fork()`
+  `if pid > 0 { // Lógica do PAI }`
+  `if pid == 0 { // Lógica do FILHO }`
+  `if pid < 0 { // Tratamento de ERRO }`
+
+
+-------------------------------------
+  PASSO 2: A SUBSTITUIÇÃO -> exec()
+-------------------------------------
+- Sozinho, o `fork()` só cria clones. Mas como executar um *outro* programa (ex: `ls`, `git`, ou outro binário)?
+- Para isso, usamos a família de chamadas `exec()`.
+- O que o `exec()` faz:
+    * SUBSTITUI o processo ATUAL por um novo programa.
+    * Todo o espaço de memória (código, stack, heap) do processo que chamou o `exec()` é COMPLETAMENTE APAGADO e carregado com o novo programa.
+    * O PID não muda! O processo é o mesmo, mas o programa em execução dentro dele é novo.
+
+-------------------------------------
+  FLUXO COMPLETO: fork() + exec()
+-------------------------------------
+1) PROCESSO PAI chama `fork()` para se clonar.
+2) Agora existem dois processos: PAI e FILHO.
+3) O FILHO (onde o `fork()` retornou 0) chama `exec()` para substituir a si mesmo por um novo programa (ex: `exec("ls", "-la")`).
+4) O PAI continua sua execução normal, sabendo o PID do filho para poder gerenciá-lo (ex: esperar que ele termine).
+
+
+-------------------------------------
+  Relação com Go
+-------------------------------------
+- Go abstrai essa complexidade para nós de forma elegante e portável (funciona em Linux, Windows, etc.).
+- O pacote `os/exec` combina os passos `fork` + `exec` (no UNIX) ou `CreateProcess` (no Windows) em uma única estrutura.
+- Você não precisa chamar `fork()` ou `exec()` manualmente em Go.
+
+-------------------------------------
+  GO x NODE.JS (COMPARAÇÃO)
+-------------------------------------
+  Finalidade        → Criar um processo filho para rodar um comando externo.
+  Go (pacote)       → `os/exec`
+  Node.js (módulo)  → `child_process`
+
+  Go                → `cmd := exec.Command("ls", "-l")`
+                      `output, err := cmd.CombinedOutput()`
+                      Abstração direta e simples.
+
+  Node.js           → `spawn('ls', ['-l'])` (ideal para streams de dados)
+                      `exec('ls -l', (err, stdout, stderr) => {})` (usa um buffer, mais simples para saídas pequenas)
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ `fork()` → Clona. Cria uma cópia exata do processo.
+✅ `exec()` → Substitui. Carrega um novo programa no lugar do atual.
+✅ Padrão UNIX → `fork()` primeiro, depois `exec()` no processo filho.
+✅ Go (`os/exec`) → Faz tudo isso por baixo dos panos para você.
+
+
+-------------------------------------
+  EXEMPLO EM GO (CRIANDO PROCESSO FILHO)
+-------------------------------------
+// Este código Go executa o comando `ls -l /` (ou `dir c:\` no Windows)
+// por baixo dos panos, ele usa fork+exec no Linux.
+
+package main
+
+import (
+    "fmt"
+    "os/exec"
+    "runtime"
+)
+
+func main() {
+    var cmd *exec.Cmd
+
+    // runtime.GOOS detecta o sistema operacional
+    if runtime.GOOS == "windows" {
+        cmd = exec.Command("cmd", "/c", "dir", "c:\\")
+    } else {
+        cmd = exec.Command("ls", "-l", "/")
+    }
+
+    // CombinedOutput() executa o comando e captura a saída padrão e de erro juntas
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        fmt.Println("Erro ao executar comando:", err)
+        return
+    }
+
+    // Imprime a saída do comando executado
+    fmt.Println("Saída do processo filho:")
+    fmt.Println(string(output))
+}
