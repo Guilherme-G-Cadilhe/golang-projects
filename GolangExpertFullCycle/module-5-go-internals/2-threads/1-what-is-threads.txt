@@ -51,4 +51,90 @@
 -------------------------------------
 - Ocorre quando duas ou mais threads tentam acessar e modificar o mesmo recurso de memória ao mesmo tempo.
 - O resultado final depende da ordem "da sorte" em que as threads são executadas, levando a resultados imprevisíveis e bugs difíceis de rastrear.
-- SOLUÇÃO:
+- SOLUÇÃO: Sincronização. Usar mecanismos como Mutexes, Semáforos ou, no estilo Go, Channels, para garantir que apenas uma thread acesse o recurso por vez.
+
+
+-------------------------------------
+  A REVOLUÇÃO DO GO: GOROUTINES
+-------------------------------------
+- Goroutines são as "threads" do Go, mas são muito mais leves e eficientes. Elas NÃO SÃO threads do SO.
+- Elas são gerenciadas pelo GO RUNTIME, não diretamente pelo SO.
+- CUSTO DE MEMÓRIA:
+  * Thread do SO: Inicia com uma stack fixa e grande (~1-2 MB).
+  * Goroutine: Inicia com uma stack minúscula e dinâmica (~2 KB) que cresce conforme a necessidade.
+- IMPACTO: Você pode ter MILHÕES de goroutines em um único processo, enquanto estaria limitado a alguns milhares de threads do SO. Isso permite um nível de concorrência massivo.
+
+
+-------------------------------------
+  GO x NODE.JS (COMPARAÇÃO)
+-------------------------------------
+- Go (Goroutines):
+  * Modelo de concorrência nativo e central na linguagem (`go func() {}`).
+  * Extremamente leves, permitindo alta concorrência.
+  * O Go Scheduler gerencia as goroutines de forma preemptiva em um pool de threads do SO, aproveitando múltiplos núcleos naturalmente.
+
+- Node.js (Worker Threads):
+  * A concorrência não é o padrão. O JS principal roda em uma única thread (Event Loop).
+  * Para paralelismo de CPU, você precisa usar o módulo `worker_threads`.
+  * Cada `worker` é uma THREAD REAL do SO, o que os torna mais pesados que goroutines.
+  * A comunicação entre workers é mais complexa, baseada na troca de mensagens, pois eles não compartilham memória da mesma forma fácil.
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Thread: Execução dentro de um processo, com stack própria mas heap compartilhada.
+✅ Race Condition: O principal perigo do multithreading. Duas threads, um recurso, zero regras.
+✅ Concorrência (1 CPU): Alternância rápida. Paralelismo (+1 CPU): Execução simultânea.
+✅ Goroutine: Uma "thread verde" gerenciada pelo Go. Super leve (2KB stack), super escalável.
+
+
+-------------------------------------
+  EXEMPLO EM GO (RACE CONDITION E SOLUÇÃO)
+-------------------------------------
+// Este exemplo mostra uma race condition na prática e como corrigi-la.
+package main
+
+import (
+    "fmt"
+    "sync"
+    "sync/atomic"
+)
+
+func main() {
+    var contador int64
+    var wg sync.WaitGroup
+
+    // --- Versão com RACE CONDITION ---
+    // Lançamos 1000 goroutines, cada uma incrementando o contador 100 vezes.
+    // O resultado esperado é 100.000, mas o resultado real será menor.
+    wg.Add(1000)
+    for i := 0; i < 1000; i++ {
+        go func() {
+            for j := 0; j < 100; j++ {
+                contador++ // Perigoso! Leitura, incremento e escrita não são uma operação única.
+            }
+            wg.Done()
+        }()
+    }
+    wg.Wait()
+    fmt.Printf("Resultado com Race Condition: %d (Incorreto)\n", contador)
+
+
+    // --- Versão CORRIGIDA com Atomic ---
+    // Resetamos o contador para fazer o teste correto.
+    contador = 0
+    wg.Add(1000)
+    for i := 0; i < 1000; i++ {
+        go func() {
+            for j := 0; j < 100; j++ {
+                // atomic.AddInt64 garante que a operação de soma seja atômica,
+                // ou seja, indivisível e segura contra concorrência.
+                atomic.AddInt64(&contador, 1)
+            }
+            wg.Done()
+        }()
+    }
+    wg.Wait()
+    fmt.Printf("Resultado corrigido com Atomic: %d (Correto)\n", contador)
+}

@@ -1,0 +1,94 @@
+=====================================
+  OS PILARES DO GO RUNTIME
+=====================================
+- O Go Runtime é um conjunto de bibliotecas e serviços "embutido" em todo programa Go.
+- Ele age como uma camada de abstração entre o seu código Go e o Sistema Operacional, gerenciando as funcionalidades mais complexas da linguagem.
+
+-------------------------------------
+  1) GOROUTINES
+-------------------------------------
+- As "threads virtuais" ou "green threads" do Go.
+- Extremamente leves (stack inicial de 2KB) e gerenciadas inteiramente pelo Go Runtime, não pelo SO.
+
+-------------------------------------
+  2) SCHEDULER (AGENDADOR)
+-------------------------------------
+- O cérebro da concorrência em Go. É ele quem agenda qual goroutine deve ser executada em qual thread do SO.
+- Usa um algoritmo de "work-stealing": se uma thread do SO fica ociosa, ela pode "roubar" goroutines da fila de outra thread para se manter ocupada.
+- Implementa o modelo M:N, que detalharemos abaixo.
+
+-------------------------------------
+  3) CHANNELS (CANAIS)
+-------------------------------------
+- A principal ferramenta para comunicação e sincronização entre goroutines.
+- Permitem que uma goroutine envie dados para outra de forma segura (thread-safe).
+- Seguem a filosofia do Go: "Não se comunique compartilhando memória; em vez disso, compartilhe memória comunicando-se."
+
+-------------------------------------
+  4) MEMORY ALLOCATION & GARBAGE COLLECTOR (GC)
+-------------------------------------
+- ALLOCATOR: O Go tem seu próprio alocador de memória, otimizado para a criação e destruição rápida de muitos objetos pequenos, algo comum em programas concorrentes.
+
+- GC: O coletor de lixo é responsável por limpar a memória que não está mais em uso. O GC do Go é altamente otimizado para ter pausas ("stop-the-world") extremamente curtas (sub-milissegundos), o que é vital para aplicações de baixa latência.
+
+-------------------------------------
+  5) STACK MANAGEMENT
+-------------------------------------
+- Gerencia o ciclo de vida das stacks das goroutines.
+- A principal característica é que as stacks começam pequenas (~2KB) e podem crescer ou encolher dinamicamente, evitando o desperdício de memória de stacks de tamanho fixo das threads do SO.
+
+-------------------------------------
+  6) NETWORK POLLER (NETPOLLER)
+-------------------------------------
+- Peça fundamental para I/O não-bloqueante.
+- Quando uma goroutine faz uma chamada de rede (ex: ler de uma conexão TCP), ela não bloqueia a thread do SO.
+- O Netpoller "observa" a conexão em nome da goroutine. A goroutine é pausada ("parked") e a thread do SO fica livre para executar outras goroutines. Quando os dados chegam, o Netpoller avisa o Scheduler para "acordar" a goroutine.
+
+-------------------------------------
+  7) REFLECTION
+-------------------------------------
+- Permite que um programa Go inspecione sua própria estrutura em tempo de execução.
+- É possível descobrir tipos, valores, campos de structs e chamar métodos dinamicamente. (Pacote `reflect`).
+
+
+=====================================
+  O MODELO DE AGENDAMENTO M:N
+=====================================
+- É a estratégia que o Scheduler do Go usa para executar muitas goroutines (M) em poucas threads do SO (N).
+
+-------------------------------------
+  O CONCEITO: VIRTUAL vs. REAL
+-------------------------------------
+- THREADS REAIS (N): Threads do Sistema Operacional. São "caras" (memória, custo de criação e troca de contexto). Gerenciadas pelo Scheduler do SO.
+- THREADS VIRTUAIS (M): Goroutines no caso do Go. São "baratas", leves e gerenciadas pelo Go Runtime.
+
+-------------------------------------
+  O MECANISMO INTERNO: O MODELO G-M-P
+-------------------------------------
+- Para entender o M:N, o Go usa três entidades principais:
+
+  * G - Goroutine: A sua unidade de trabalho. Contém a stack, o ponteiro da instrução atual e seu estado (ex: rodando, esperando, etc).
+  * M - Machine (Máquina): Uma thread do SO, o "trabalhador" real. Um programa Go pode ter vários M's.
+  * P - Processor (Processador): Um contexto de execução. É a cola entre G e M. Cada P tem uma fila local de G's prontas para rodar. O número de P's ativos é controlado por `runtime.GOMAXPROCS()` e é, por padrão, igual ao número de núcleos da CPU.
+
+- FLUXO: Para um M (thread) executar um G (goroutine), ele precisa adquirir um P (contexto). O P fornece a fila de goroutines para o M executar. Se um M bloqueia (ex: em uma chamada de sistema), o Scheduler pode tirar o P dele e entregá-lo a outro M para continuar executando as goroutines da fila, garantindo que o trabalho nunca pare.
+
+
+-------------------------------------
+  GO x NODE.JS (COMPARAÇÃO DE MODELOS)
+-------------------------------------
+- Go (M:N): Múltiplas goroutines rodam em um pool de N threads do SO, permitindo PARALELISMO real e aproveitamento total de múltiplos núcleos de CPU de forma nativa e simples.
+
+- Node.js (Modelo 1:N + Workers):
+  * O Event Loop principal roda em UMA thread do SO (1).
+  * Para operações de I/O, ele usa um pool de threads internas (N) do libuv.
+  * Para paralelismo de CPU, o desenvolvedor precisa criar `worker_threads` manualmente, que são threads de SO mais pesadas e com comunicação mais complexa.
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Go Runtime: Um "mini-SO" dentro do seu programa Go.
+✅ M:N: Muitas (M) goroutines em poucas (N) threads do SO.
+✅ G-M-P: O mecanismo por trás do scheduler. G = tarefa, M = trabalhador (thread), P = gerenciador/fila.
+✅ Netpoller: O segredo do I/O não-bloqueante em Go.

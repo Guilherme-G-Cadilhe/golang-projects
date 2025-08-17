@@ -1,0 +1,70 @@
+=====================================
+  GOROUTINES: UM MERGULHO PROFUNDO
+=====================================
+- São funções ou métodos que o Go executa de forma concorrente com outras goroutines.
+- Essencialmente, são as "threads virtuais" ou "green threads" do Go, totalmente gerenciadas pelo Go Runtime.
+
+-------------------------------------
+  LEVEZA E VELOCIDADE
+-------------------------------------
+- CUSTO DE CRIAÇÃO: Iniciar uma goroutine não exige uma chamada de sistema (syscall) ao SO, é uma operação puramente de software gerenciada pelo runtime. Por isso é extremamente rápido.
+- CUSTO DE MEMÓRIA: Começam com uma stack de apenas 2KB, que pode crescer e encolher. Uma thread do SO tem uma stack fixa e muito maior (1-2MB).
+- IMPACTO: É viável ter centenas de milhares, ou até milhões, de goroutines em um único processo.
+
+-------------------------------------
+  MODELO DE MEMÓRIA
+-------------------------------------
+- HEAP COMPARTILHADA: Todas as goroutines dentro de um mesmo programa compartilham o mesmo espaço de endereçamento de memória (Heap). Isso significa que uma goroutine PODE acessar e modificar um dado que outra goroutine está usando.
+  -> CUIDADO: É aqui que surgem as "Race Conditions". A comunicação deve ser sincronizada (ex: via channels ou mutexes).
+
+- STACK INDEPENDENTE: Cada goroutine possui sua própria stack isolada. Variáveis criadas dentro de uma goroutine (variáveis locais) não são diretamente visíveis para outras, garantindo que não haja interferência nesse nível.
+
+
+=====================================
+  A DINÂMICA DO SCHEDULER: G-M-P EM AÇÃO
+=====================================
+- O modelo G-M-P (Goroutine, Machine, Processor) é a arquitetura que permite ao Go gerenciar eficientemente a concorrência. Vamos ver como ele funciona na prática.
+
+-------------------------------------
+  O FLUXO DE INICIALIZAÇÃO E EXECUÇÃO
+-------------------------------------
+1) O programa Go inicia como um único PROCESSO no SO.
+2) O Go Runtime inicializa e cria um número de PROCESSADORES LÓGICOS (P), geralmente um para cada núcleo de CPU disponível (`GOMAXPROCS`).
+3) O Runtime também cria um pool inicial de THREADS DO Sistema Operacional (M).
+4) Para executar trabalho, uma thread (M) precisa "reivindicar" um processador lógico (P).
+5) A goroutine (G) é então colocada na fila de execução do P, e o M executa as instruções da G.
+
+-> RESUMO: O M (trabalhador) usa o P (gerente/fila) para executar as Gs (tarefas).
+
+
+-------------------------------------
+  CENÁRIO 1: CHAMADA DE SISTEMA BLOQUEANTE (SYSCALL)
+-------------------------------------
+- Uma goroutine (G1) rodando em um par M1/P1 faz uma chamada que bloqueia a thread (ex: ler um arquivo do disco).
+- A thread M1 fica bloqueada, esperando o SO responder.
+- O Go Scheduler detecta isso! Ele DESACOPLA o P1 da thread M1 bloqueada.
+- O Scheduler então encontra outra thread livre, M2 (ou cria uma nova), e ACOPLA o P1 a ela.
+- A nova dupla M2/P1 agora pode continuar executando OUTRAS goroutines que estavam na fila do P1.
+- Quando a chamada de sistema da G1 termina, a M1 fica livre e tenta "pegar" um P para voltar ao trabalho.
+
+✅ RESULTADO: Uma chamada bloqueante não para o progresso das outras goroutines daquele processador.
+
+
+-------------------------------------
+  CENÁRIO 2: WORK-STEALING (ROUBO DE TRABALHO)
+-------------------------------------
+- Imagine que o P1 (atrelado ao M1) terminou todas as goroutines da sua fila, ficando ocioso.
+- Enquanto isso, o P2 (atrelado ao M2) ainda tem uma fila cheia de goroutines esperando.
+- Em vez de ficar parado, o M1/P1 vai olhar a fila de outros P's. Ele "rouba" metade das goroutines da fila do P2 para sua própria fila.
+- Agora, tanto M1/P1 quanto M2/P2 estão executando goroutines.
+
+✅ RESULTADO: O trabalho é distribuído de forma justa e automática entre os núcleos da CPU, maximizando a utilização do hardware.
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Goroutine não é uma thread do SO. É uma abstração muito mais leve.
+✅ O Scheduler do Go é o "cérebro" que impede que o sistema pare por causa de I/O.
+✅ M (thread) bloqueia -> P (contexto) se move para outro M.
+✅ M (thread) fica ocioso -> P (contexto) procura "roubar" trabalho de outros P's.

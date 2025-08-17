@@ -1,0 +1,71 @@
+=====================================
+  MEMÓRIA EM GO: O ALOCADOR MALLOCGC
+=====================================
+- O Go não usa a função `malloc` da biblioteca C. Ele possui seu próprio gerenciador de memória totalmente integrado ao runtime.
+
+-------------------------------------
+  CARACTERÍSTICAS GERAIS
+-------------------------------------
+- NOME OFICIAL: `mallocgc` (malloc with garbage collection).
+- ORIGEM: Fortemente inspirado no TCMalloc (Thread-Caching Malloc) do Google, mas evoluiu significativamente para se adequar ao modelo de concorrência do Go.
+- OBJETIVO: Ser extremamente rápido para alocar e desalocar um grande número de objetos pequenos de forma concorrente, minimizando a contenção por locks.
+
+-------------------------------------
+  OS COMPONENTES DA ARQUITETURA
+-------------------------------------
+- A memória em Go é organizada em uma hierarquia clara para otimizar o acesso.
+
+  * OS (Sistema Operacional): A fonte de toda a memória. Fornece grandes blocos de memória virtual para o `mheap`.
+
+  * mheap: O "armazém central". É o objeto que gerencia toda a heap do Go.
+    - Pede e devolve grandes áreas de memória (Arenas) para o SO.
+    - Organiza a memória em blocos de 8KB chamados **spans**.
+    - Mantém spans que não estão em uso e os distribui para os `mcentral`s. Acessar o `mheap` requer um lock global.
+
+  * mcentral: O "distribuidor por atacado".
+    - Existe UM `mcentral` para CADA CLASSE DE TAMANHO de objeto (ex: um para objetos de 16 bytes, outro para 32 bytes, etc.).
+    - Sua função é gerenciar uma lista de **spans** para um tamanho específico.
+    - Ele fornece spans inteiros para os `mcache`s. Acessar um `mcentral` requer um lock, mas apenas para aquela classe de tamanho, reduzindo a disputa.
+
+  * mcache: O "estoque local".
+    - É o cache de memória LOCAL de um PROCESSADOR LÓGICO (P). Cada P tem o seu próprio `mcache`.
+    - Contém uma pequena quantidade de spans para cada classe de tamanho de objeto pequeno.
+    - **É A CHAVE DA PERFORMANCE:** Quando uma goroutine precisa de memória, ela pega do `mcache` do seu P. Essa operação é **SEM LOCKS**, pois apenas aquele P acessa seu próprio cache.
+
+  * Span: A unidade fundamental de gerenciamento. É um bloco contíguo de 8KB de memória que pode ser dividido para armazenar múltiplos objetos do mesmo tamanho.
+
+-------------------------------------
+  O FLUXO DE ALOCAÇÃO DE OBJETOS PEQUENOS (<32KB)
+-------------------------------------
+- Este é o caminho mais comum e otimizado:
+  `G (Goroutine) -> P (Processador) -> mcache -> mcentral -> mheap -> OS`
+
+  1. Uma Goroutine (G) rodando em um Processador (P) precisa de memória.
+  2. Ela solicita ao `mcache` do seu P.
+  3. Se o `mcache` tem um `span` livre para aquele tamanho de objeto, a memória é entregue IMEDIATAMENTE (sem lock, super rápido).
+  4. Se o `mcache` não tem mais espaço, ele pede um `span` novo e cheio ao `mcentral` da classe de tamanho apropriada. (Esta operação exige um LOCK no `mcentral`).
+  5. Se o `mcentral` também não tem mais `spans`, ele pede um conjunto de `spans` ao `mheap`. (Esta operação exige um LOCK global no `mheap`).
+  6. Se o `mheap` não tem mais `spans`, ele pede uma nova e grande região de memória (Arena) ao Sistema Operacional.
+
+-------------------------------------
+  O FLUXO DE ALOCAÇÃO DE OBJETOS GRANDES (>32KB)
+-------------------------------------
+- Objetos grandes não passam pelo sistema de cache (`mcache` e `mcentral`).
+- Eles são alocados diretamente do `mheap`. Essa operação é mais lenta e sempre requer um lock global, mas é menos frequente.
+
+-------------------------------------
+  A IMPORTÂNCIA DOS LOCKS (TRAVAS)
+-------------------------------------
+- A genialidade deste design está em minimizar o uso de locks.
+- `mcache`: **SEM LOCK**. 99% das alocações de objetos pequenos acontecem aqui.
+- `mcentral`: **LOCK POR CLASSE DE TAMANHO**. A disputa só ocorre entre P's que precisam de memória para o mesmo tamanho de objeto ao mesmo tempo.
+- `mheap`: **LOCK GLOBAL**. O acesso é mais raro, apenas quando `mcentral`s precisam de mais "estoque".
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ `mallocgc`: O nome do alocador de memória do Go.
+✅ Hierarquia: `mheap` (global) -> `mcentral` (por tamanho) -> `mcache` (por processador `P`).
+✅ Acesso ao `mcache` é **sem lock**, o que torna a alocação concorrente de objetos pequenos extremamente rápida.
+✅ Objetos grandes (>32KB) são uma exceção e são alocados diretamente do `mheap`.
+✅ Essa arquitetura é o motivo pelo qual o Go escala tão bem em aplicações com alta concorrência.

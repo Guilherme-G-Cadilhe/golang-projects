@@ -1,0 +1,75 @@
+=====================================
+  O SCHEDULER DO GO: DETALHES AVANÇADOS
+=====================================
+- O Scheduler é o componente do Go Runtime que gerencia como, quando e onde as goroutines (G) são executadas nas threads do SO (M), utilizando os processadores lógicos (P).
+
+-------------------------------------
+  CONFIGURANDO O PARALELISMO: runtime.GOMAXPROCS
+-------------------------------------
+- A variável `GOMAXPROCS` determina o número de PROCESSADORES LÓGICOS (P) que podem executar goroutines simultaneamente.
+- Por padrão, seu valor é o número de núcleos de CPU da máquina.
+- Um P é sempre associado a um M (thread) para poder executar código. Portanto, `GOMAXPROCS` define o nível MÁXIMO de paralelismo real que seu programa pode atingir.
+- O NÚMERO DE M's NÃO É FIXO: O Go pode criar mais threads (M) do que P's. Se uma thread M1 bloqueia em uma syscall, o scheduler move seu P para uma nova thread M2 para manter o P ocupado. O objetivo é nunca deixar um processador lógico ocioso.
+
+
+-------------------------------------
+  A REGRA DE OURO: A COMBINAÇÃO G + M + P
+-------------------------------------
+- Leia a citação:
+  "O trabalho do Scheduler é combinar um G (o código a ser executado), um M (onde executá-lo) e um P (os direitos e recursos para executá-lo). Quando um M para de executar o código Go do usuário, por exemplo, ao entrar em uma syscall, ele devolve seu P para o pool de P's ociosos. Para retomar a execução, ele deve adquirir um P do pool de ociosos."
+
+- É um sistema dinâmico e adaptativo que gerencia:
+  * Atribuição de tarefas (G -> P)
+  * Balanceamento de carga (Work-Stealing)
+  * Gerenciamento de estado das goroutines
+
+
+-------------------------------------
+  A EVOLUÇÃO DA JUSTIÇA: PREEMPÇÃO EM GO (VERSÃO >= 1.14)
+-------------------------------------
+- O scheduler do Go é PREEMPTIVO, o que significa que ele pode FORÇAR a interrupção de uma goroutine para dar a vez a outra.
+- ANTES DO GO 1.14: A preempção era COOPERATIVA. Uma goroutine só cedia a vez ao fazer uma chamada de função. Um loop `for {}` sem chamadas de função podia "sequestrar" um P e deixar outras goroutines na fila esperando indefinidamente.
+- A PARTIR DO GO 1.14: Foi introduzida a PREEMPÇÃO ASSÍNCRONA. O runtime pode agora pausar uma goroutine mesmo no meio de um loop "apertado", garantindo que nenhuma goroutine monopolize o tempo de execução. Isso torna o scheduling mais justo e responsivo.
+
+
+-------------------------------------
+  O CICLO DE VIDA DE UMA GOROUTINE
+-------------------------------------
+- O scheduler gerencia o estado de cada goroutine. Os três principais estados são:
+
+  1) RUNNABLE (Pronta)
+     - A goroutine está pronta para ser executada, mas está aguardando em uma fila (seja a fila local de um P ou a fila global).
+
+  2) RUNNING (Executando)
+     - A goroutine foi escolhida pelo scheduler, associada a um trio G-M-P e está atualmente executando instruções na CPU.
+
+  3) WAITING (Bloqueada / Esperando)
+     - A goroutine não pode continuar e está esperando por um evento. Exemplos:
+       * Esperando por uma operação de I/O (Ex: leitura de rede).
+       * Esperando por dados em um channel.
+       * Esperando um `Mutex` ser liberado.
+       * Pausada por um `time.Sleep`.
+     - Uma vez que o evento ocorre, ela volta para o estado RUNNABLE.
+
+
+-------------------------------------
+  MECÂNICAS DO WORK-STEALING
+-------------------------------------
+- É a estratégia de balanceamento de carga do scheduler.
+- O QUE ACONTECE: Um P termina todas as goroutines de sua fila local e fica ocioso.
+- A HIERARQUIA DO "ROUBO":
+  1. Tenta roubar da fila local de outro P (operação mais rápida).
+  2. Se falhar, tenta roubar da fila global de goroutines (um pouco mais lenta, pois exige um lock).
+  3. Se ainda falhar, verifica o Network Poller por goroutines que estavam bloqueadas em I/O e agora estão prontas.
+  4. Se nada funcionar, o P e seu M podem ser colocados para "dormir" temporariamente.
+
+- O CHECK PERIÓDICO: Para evitar o overhead de ficar verificando a fila global o tempo todo, o scheduler faz essa verificação periodicamente. A regra é: (a cada 1/61 do tempo). é um detalhe de implementação que mostra como essa checagem é calibrada para ser eficiente.
+
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ GOMAXPROCS: Define o número de P's (paralelismo), não o número de M's (threads).
+✅ O scheduler é PREEMPTIVO (desde o Go 1.14), garantindo justiça na execução.
+✅ Ciclo de Vida: Goroutine alterna entre Runnable, Running e Waiting.
+✅ Work-Stealing: Garante que nenhum P fique ocioso se houver trabalho a ser feito em outro lugar.

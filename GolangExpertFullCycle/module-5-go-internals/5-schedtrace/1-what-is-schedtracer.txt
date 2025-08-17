@@ -1,0 +1,60 @@
+=====================================
+  DEBUGANDO GOROUTINES COM SCHEDTRACER
+=====================================
+- O Go oferece ferramentas de diagnóstico poderosas diretamente no seu runtime. Uma das mais úteis para entender o comportamento do scheduler é o "scheduler trace".
+- Ele é ativado através da variável de ambiente `GODEBUG`.
+
+-------------------------------------
+  O QUE É UM VAZAMENTO DE GOROUTINE (LEAK)?
+-------------------------------------
+- É uma goroutine que é iniciada mas NUNCA termina. Ela continua consumindo recursos (memória e/ou CPU) pelo resto da vida do programa.
+- CAUSAS COMUNS:
+  1) Loop Infinito: Como no exemplo (`for {}`). A goroutine fica para sempre no estado "Runnable", consumindo tempo de CPU.
+  2) Bloqueio Eterno: Uma goroutine fica esperando para sempre por uma operação que nunca acontecerá (ex: ler de um channel que nunca receberá dados, esperar por um mutex que nunca será liberado).
+- IMPACTO: Aumento contínuo do uso de memória, degradação da performance e, em casos extremos, o travamento da aplicação.
+
+-------------------------------------
+  A FERRAMENTA: GODEBUG=schedtrace
+-------------------------------------
+- É uma flag que instrui o Go Runtime a imprimir um resumo do estado do scheduler em um intervalo de tempo.
+- COMO USAR:
+  `GODEBUG=schedtrace=X go run main.go`
+  - `X` é o intervalo em milissegundos. Um bom valor para observação é 1000 (1 segundo).
+  - A saída é impressa no `stderr` (saída de erro padrão).
+
+-------------------------------------
+  INTERPRETANDO A SAÍDA DO SCHEDTRACER
+-------------------------------------
+- Cada linha é uma "fotografia" do estado do scheduler. 
+Vamos analisar uma do log:
+  `SCHED 412ms: gomaxprocs=1 idleprocs=0 threads=6 spinningthreads=0 needspinning=1 idlethreads=2 runqueue=1 [1]`
+
+  * `SCHED`: Identificador da linha de trace.
+  * `412ms`: Tempo de execução do programa (uptime).
+  * `gomaxprocs=1`: O valor de GOMAXPROCS (1 P ativo).
+  * `idleprocs=0`: Número de P's ociosos (nenhum, o único P está ocupado).
+  * `threads=6`: Número total de threads do SO (M's) criadas pelo runtime.
+  * `spinningthreads=0`: Threads que estão em "busy-wait" (rodando um loop vazio) esperando por trabalho.
+  * `idlethreads=2`: Threads ociosas, esperando para serem associadas a um P.
+  * `runqueue=1`: **(MUITO IMPORTANTE)** Número de goroutines na Fila de Execução Global (GRQ).
+  * `[1]`: **(MUITO IMPORTANTE)** Array que mostra o número de goroutines na Fila de Execução Local (LRQ) de cada P. Como `gomaxprocs=1`, o array tem um só elemento. `[1]` significa que o P0 tem 1 goroutine na sua fila local.
+
+-------------------------------------
+  ANALISANDO O CÓDIGO EXEMPLO E O LOG
+-------------------------------------
+- CÓDIGO: Cada vez que o endpoint `/leak` é chamado, uma nova goroutine é criada e entra em um loop infinito (`for {}`).
+- O VAZAMENTO: Essa goroutine nunca termina. Como ela está sempre pronta para executar (não está bloqueada em I/O), ela fica permanentemente no estado `Runnable`.
+- O EFEITO NO SCHEDTRACER:
+  1. O scheduler do Go é preemptivo. Ele executa a goroutine vazada por um tempo (~10ms).
+  2. Depois, ele a interrompe e a coloca de volta na fila (`runqueue` ou `[P's queue]`) para dar a vez a outras (como as do servidor HTTP).
+  3. Como a goroutine nunca termina, ela sempre volta para a fila.
+  4. A cada nova chamada a `/leak`, mais uma goroutine "imortal" é adicionada ao sistema.
+- **O SINAL DE ALERTA NO SEU LOG:** Você verá os números em `runqueue` e no array `[X]` **crescerem constantemente** à medida que você acessa o endpoint `/leak`. Se esses números só aumentam e nunca diminuem, você tem um vazamento de goroutines "runnable".
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Vazamento de Goroutine: Começa, mas nunca termina. Consome recursos para sempre.
+✅ `GODEBUG=schedtrace=1000`: Imprime o estado do scheduler a cada 1 segundo.
+✅ Fique de olho no `runqueue` e no array `[X Y Z]`. Se esses números só crescem, é um forte sinal de vazamento de goroutines que estão prontas para executar.
+✅ Para goroutines vazadas por bloqueio (canais, mutex), `pprof` é uma ferramenta melhor para encontrá-las. `schedtrace` é excelente para leaks de CPU-bound.

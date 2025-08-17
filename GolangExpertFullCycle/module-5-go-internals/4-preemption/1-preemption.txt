@@ -1,0 +1,82 @@
+=====================================
+  PREEMPÇÃO EM GO: COMO FUNCIONA?
+=====================================
+- Preempção é a capacidade do scheduler de INTERROMPER uma goroutine em execução para dar a vez a outra.
+- O objetivo é garantir a JUSTIÇA e evitar que uma única goroutine "egoísta" monopolize um núcleo de CPU, deixando outras esperando indefinidamente (starvation).
+- Go utiliza uma abordagem híbrida com dois mecanismos principais.
+
+-------------------------------------
+  MECANISMO 1: PREEMPÇÃO COOPERATIVA (BASEADA EM PONTOS SEGUROS)
+-------------------------------------
+- Este é o método principal e de baixo custo.
+- COMO FUNCIONA: O compilador do Go insere uma pequena verificação no início da maioria das chamadas de função. Essa verificação é chamada de "preemption check".
+- O QUE ELE VERIFICA: Ele olha para uma flag na goroutine. Se o scheduler "pediu" para a goroutine parar, essa flag estará marcada.
+- AÇÃO: Se a flag estiver marcada, a goroutine pausa sua execução atual e chama o scheduler, que a coloca de volta na fila (runnable) e escala outra goroutine para rodar.
+- PONTOS SEGUROS: Chamadas de função, alocação de memória e laços (`for`) são os principais locais onde essa verificação acontece.
+- LIMITAÇÃO: Se uma goroutine entrar em um loop computacional pesado SEM fazer nenhuma chamada de função, ela nunca chegará a um "ponto seguro" para ser interrompida por este método.
+
+-------------------------------------
+  MECANISMO 2: PREEMPÇÃO ASSÍNCRONA (BASEADA EM SINAIS - GO >= 1.14)
+-------------------------------------
+- Este é o "plano B", a rede de segurança para o problema descrito acima.
+- COMO FUNCIONA:
+  1) MONITORAMENTO: O Go Runtime possui uma thread de monitoramento do sistema (conhecida como `sysmon`).
+  2) DETECÇÃO: A `sysmon` monitora o estado do scheduler. Se ela detecta que uma goroutine (G) está rodando em uma thread (M) por muito tempo (ex: mais de 10ms) sem ceder, ela age.
+  3) SINALIZAÇÃO: A `sysmon` envia um SINAL de SO (como `SIGURG` em sistemas Unix) para a thread (M) que está executando a goroutine "egoísta".
+  4) INTERRUPÇÃO: O Go Runtime captura esse sinal. O sinal interrompe a execução da goroutine, insere uma chamada para o scheduler (forçando a preempção) e depois retoma a execução da goroutine de onde parou.
+- IMPACTO: Garante que mesmo o pior código possível (um `for {}` vazio) não pode travar um processador lógico (P).
+
+-------------------------------------
+  COMO OS DOIS TRABALHAM JUNTOS
+-------------------------------------
+- A preempção cooperativa é a primeira linha de defesa. É extremamente eficiente e lida com 99% dos casos.
+- A preempção assíncrona é a garantia de robustez. Ela age como um "guarda-costas" que intervém apenas quando o método cooperativo não é suficiente, garantindo que o sistema nunca pare.
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Preempção Cooperativa: Verificação rápida no início de chamadas de função. Rápida e comum.
+✅ Preempção Assíncrona: O `sysmon` usa sinais do SO para forçar a parada. É a rede de segurança.
+✅ O objetivo final é a JUSTIÇA: Nenhuma goroutine deve poder "matar de fome" as outras.
+✅ Este comportamento robusto é garantido desde o Go 1.14.
+
+-------------------------------------
+  EXEMPLO EM GO (DEMONSTRANDO A PREEMPÇÃO)
+-------------------------------------
+-------------------------------------
+  EXEMPLO EM GO (DEMONSTRANDO A PREEMPÇÃO)
+-------------------------------------
+// Este código mostra a preempção em ação.
+// Temos uma goroutine "egoísta" que tenta usar 100% da CPU em um loop.
+// Mesmo assim, a goroutine "educada" (na main) consegue imprimir mensagens.
+// Isso prova que o scheduler está interrompendo o loop para dar a vez a outra.
+
+package main
+
+import (
+    "fmt"
+    "runtime"
+    "time"
+)
+
+func main() {
+    // Garante que usaremos pelo menos 2 threads/processadores lógicos
+    // para ver o efeito mais claramente.
+    runtime.GOMAXPROCS(2)
+
+    // Goroutine "egoísta": tenta monopolizar a CPU
+    go func() {
+        fmt.Println("Goroutine egoísta iniciada. Tentando usar 100% de um núcleo...")
+        // Este loop infinito não faz chamadas de função, desafiando o scheduler.
+        for {}
+    }()
+
+    // Goroutine "educada" (a principal): imprime uma mensagem a cada segundo.
+    fmt.Println("Goroutine principal (educada) iniciada.")
+    for i := 0; i < 10; i++ {
+        fmt.Printf("Principal: Tick %d\n", i)
+        time.Sleep(1 * time.Second) // time.Sleep é um ponto de preempção claro.
+    }
+
+    fmt.Println("Goroutine principal terminada. O programa não travou!")
+}
