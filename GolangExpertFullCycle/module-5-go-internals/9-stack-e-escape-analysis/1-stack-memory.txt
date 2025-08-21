@@ -1,0 +1,72 @@
+=====================================
+  A STACK (PILHA) DE MEMÓRIA EM GO
+=====================================
+- A Stack é uma das duas principais regiões de memória de um programa (a outra é a Heap). Ela é fundamental para gerenciar a execução de funções.
+
+-------------------------------------
+  REVISÃO: O QUE É UMA STACK?
+-------------------------------------
+- ESTRUTURA: Segue o princípio LIFO (Last-In, First-Out). O último item adicionado é o primeiro a ser removido.
+- VELOCIDADE: É uma região de memória extremamente rápida, pois alocar e desalocar dados é simplesmente uma questão de mover um único ponteiro (o "stack pointer").
+- O QUE FICA NA STACK:
+  * Variáveis locais de uma função (ex: `x := 10`).
+  * Parâmetros passados para uma função.
+  * Endereço de retorno: Para onde o programa deve voltar quando a função atual terminar.
+  * Escopo e tempo de vida: Os dados na stack só existem durante a execução da função. Quando a função retorna, sua "fatia" na stack (o "stack frame") é liberada automaticamente.
+
+-------------------------------------
+  O PROBLEMA: STACKS DE THREADS TRADICIONAIS
+-------------------------------------
+- Em linguagens como C ou Java, cada thread do sistema operacional tem sua própria stack.
+- CARACTERÍSTICA: Essas stacks têm um TAMANHO FIXO e grande, pré-alocado quando a thread é criada (ex: 2MB a 8MB no Linux).
+- O GARGALO: Se você quisesse criar 100.000 "threads" para concorrência, precisaria de `100.000 * 2MB = 200GB` de memória virtual, o que é inviável. Esse alto custo de memória é o que limita o número de threads que um programa tradicional pode criar.
+
+-------------------------------------
+  A SOLUÇÃO DO GO: STACKS DINÂMICAS E SEGMENTADAS
+-------------------------------------
+- Go resolveu o problema das stacks fixas desacoplando as goroutines das threads do SO e dando a cada goroutine sua própria stack gerenciada pelo runtime.
+
+  1. INICIALIZAÇÃO PEQUENA:
+     - Cada goroutine nasce com uma stack muito pequena: apenas **2KB**. Isso permite que centenas de milhares de goroutines coexistam com um baixo custo de memória.
+
+  2. CRESCIMENTO SOB DEMANDA:
+     - Antes de executar uma chamada de função, o runtime do Go insere um "checkpoint".
+     - Nesse ponto, ele verifica se a stack atual tem espaço suficiente para a nova função.
+     - Se não tiver, o crescimento é acionado:
+       a. Uma nova "fatia" de stack (segmento), geralmente com o dobro do tamanho da anterior, é alocada.
+       b. Os dados da stack antiga são copiados para a nova.
+       c. Os ponteiros são atualizados e a execução da goroutine continua na nova stack maior.
+     - Esse processo é conhecido como "stack splitting" ou "cópia de stack".
+
+  3. REDUÇÃO DE TAMANHO (SHRINKING):
+     - O processo também funciona ao contrário. Quando uma goroutine retorna de uma série de chamadas de função profundas e não precisa mais de uma stack grande, o runtime pode detectar isso durante um ciclo de GC e liberar os segmentos de stack não utilizados, devolvendo a memória.
+
+-------------------------------------
+  MECANISMOS DE PROTEÇÃO: GUARD PAGES E STACK OVERFLOW
+-------------------------------------
+- Para garantir a segurança, mesmo com stacks dinâmicas, o Go implementa duas proteções:
+
+  1. GUARD PAGES:
+     - O runtime coloca uma "página de guarda" na memória, adjacente à stack. Essa página é marcada como inválida.
+     - Se um bug no código (como um buffer overflow) tentar acessar a memória além do limite da stack, ele atingirá a guard page.
+     - Isso causa uma falha de hardware que é capturada pelo Go, que então encerra o programa com um pânico, em vez de permitir uma corrupção silenciosa de memória.
+
+  2. LIMITE DE STACK OVERFLOW:
+     - Para prevenir que uma recursão infinita consuma toda a memória do sistema, o Go impõe um limite máximo para o crescimento da stack de uma goroutine (ex: 1GB em sistemas de 64 bits). Se esse limite for atingido, o programa entra em pânico com um erro de "stack overflow".
+
+-------------------------------------
+  GO x NODE.JS (JAVASCRIPT)
+-------------------------------------
+- O motor V8 do JavaScript, usado pelo Node.js e Chrome, também usa uma "Call Stack".
+- DIFERENÇA FUNDAMENTAL: A Call Stack do V8 é mais parecida com a de uma thread tradicional: ela tem um **tamanho fixo e contíguo**.
+- CONSEQUÊNCIA: Se você escrever uma função com recursão muito profunda em JavaScript, irá rapidamente estourar esse limite, resultando no famoso erro: `RangeError: Maximum call stack size exceeded`.
+- O Go, com suas stacks dinâmicas, consegue lidar com chamadas de função muito mais profundas, pois a stack pode crescer conforme a necessidade.
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Stack é LIFO: rápida, organizada, para dados de funções locais.
+✅ O problema das stacks tradicionais é o tamanho fixo e grande, que limita a concorrência.
+✅ Go usa stacks dinâmicas: começam com 2KB e crescem/encolhem conforme a necessidade.
+✅ Esse design é a chave para a capacidade do Go de suportar um número massivo de goroutines.
+✅ A stack do JavaScript (V8) tem tamanho fixo, por isso o erro "Maximum call stack size exceeded" é mais comum.

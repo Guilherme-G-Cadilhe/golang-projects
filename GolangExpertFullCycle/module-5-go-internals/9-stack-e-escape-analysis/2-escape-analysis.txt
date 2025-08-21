@@ -1,0 +1,88 @@
+=====================================
+  STACK vs. HEAP: A DECISÃO DO COMPILADOR (ESCAPE ANALYSIS)
+=====================================
+- Em Go, o programador não decide explicitamente se uma variável será alocada na Stack (rápida) ou na Heap (lenta). Essa decisão é uma otimização feita pelo compilador através de um processo chamado Análise de Escape.
+
+-------------------------------------
+  O QUE É ANÁLISE DE ESCAPE (ESCAPE ANALYSIS)?
+-------------------------------------
+- É o processo pelo qual o compilador Go analisa seu código para determinar se o endereço de uma variável pode "escapar" do escopo da função onde foi criada.
+- A REGRA GERAL: Se o compilador puder provar que uma variável é usada APENAS durante a execução de sua função, ela será alocada na **Stack**. Se a variável precisar sobreviver após o retorno da função, ela **escapa para a Heap**.
+- O OBJETIVO: Maximizar o uso da Stack, que é muito mais performática, e minimizar as alocações na Heap, que pressionam o Garbage Collector.
+
+-------------------------------------
+  COMO VERIFICAR SE UMA VARIÁVEL "ESCAPOU"
+-------------------------------------
+- Você pode pedir ao compilador para te mostrar os resultados da análise de escape usando a flag `-m` em `-gcflags`.
+- COMANDO:
+  `go build -gcflags="-m" main.go`
+  (ou `go run -gcflags="-m" main.go` para rodar diretamente)
+
+- EXEMPLO DE SAÍDA:
+  `./main.go:6:9: x escapes to heap` (Informa que a variável 'x' na linha 6, coluna 9, escapou para a heap)
+
+-------------------------------------
+  CENÁRIOS COMUNS QUE CAUSAM O ESCAPE PARA A HEAP
+-------------------------------------
+
+1. RETORNO DE PONTEIROS PARA VARIÁVEIS LOCAIS
+   - Se uma função retorna um ponteiro para uma de suas variáveis locais, essa variável precisa continuar existindo após a função terminar. Portanto, ela é alocada na Heap.
+
+   // CÓDIGO EXEMPLO:
+   func createObject() *int {
+       x := 42
+       return &x // &x "escapa" da função
+   }
+   // SAÍDA DO COMPILADOR: ./main.go:X:Y: x escapes to heap
+
+-------------------------------------
+2. ARMAZENAMENTO EM ESTRUTURA DE DADOS EXTERNA
+   - Se o ponteiro de uma variável local é armazenado em uma estrutura de dados (como um slice ou map) que vive fora do escopo da função, a variável deve escapar para a Heap.
+
+   // CÓDIGO EXEMPLO:
+   var globalSlice []*int
+
+   func storeObject() {
+       y := 100
+       // y precisa sobreviver porque globalSlice continuará existindo
+       globalSlice = append(globalSlice, &y)
+   }
+   // SAÍDA DO COMPILADOR: ./main.go:X:Y: y escapes to heap
+
+-------------------------------------
+3. VARIÁVEIS USADAS POR GOROUTINES (CLOSURES)
+   - A vida de uma goroutine é independente da função que a criou. Se uma goroutine usa uma variável da função "mãe", essa variável deve ser movida para a Heap para garantir que ainda exista quando a goroutine for executá-la.
+
+   // CÓDIGO EXEMPLO:
+   func startWorker() {
+       z := 10
+       go func() {
+           // Esta goroutine pode rodar muito depois de startWorker() ter retornado.
+           // 'z' precisa continuar vivo na Heap.
+           fmt.Println(z)
+       }()
+   }
+   // SAÍDA DO COMPILADOR: ./main.go:X:Y: z escapes to heap
+
+-------------------------------------
+4. CHAMADAS A FUNÇÕES COM INTERFACES (CASO SUTIL)
+   - Quando você passa um valor para uma função que aceita uma interface (`interface{}`), o compilador muitas vezes não sabe o tamanho exato do dado em tempo de compilação. Para garantir a segurança, ele aloca o dado na Heap.
+   - Exemplo clássico: `fmt.Println(meuStruct)` faz com que `meuStruct` escape para a heap.
+
+-------------------------------------
+  GO x NODE.JS (JAVASCRIPT)
+-------------------------------------
+- O JavaScript possui regras mais simples e menos otimizadas para essa decisão.
+- REGRA EM JS:
+  * Tipos primitivos (number, boolean, string) são geralmente alocados na **Stack** quando são variáveis locais.
+  * **Todos** os `Objetos {}` e `Arrays []` são **sempre** alocados na **Heap**.
+- A GRANDE DIFERENÇA: O compilador do Go é capaz de provar que uma `struct` (análoga a um objeto JS) ou um `array` pode ser alocado na **Stack** se não escapar. Em JavaScript, essa otimização não existe; objetos e arrays são sempre destinados à Heap, o que pode gerar mais trabalho para o Garbage Collector.
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ Escape Analysis: Otimização do compilador para decidir entre Stack (rápida) e Heap (lenta).
+✅ A regra: A variável precisa "viver" além da função? Se sim -> Heap. Se não -> Stack.
+✅ Use `go run -gcflags="-m"` para ver o que está escapando no seu código.
+✅ Causas comuns de escape: retornar ponteiros, armazenar em slices/maps globais, usar em goroutines.
+✅ Go pode alocar structs/arrays na Stack, uma otimização que JavaScript geralmente não faz.

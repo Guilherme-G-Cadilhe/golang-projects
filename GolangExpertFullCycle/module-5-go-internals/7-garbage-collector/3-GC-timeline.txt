@@ -1,0 +1,61 @@
+=====================================
+  A EVOLUÇÃO DO GARBAGE COLLECTOR DO GO
+=====================================
+- A história do GC do Go é uma jornada de otimização contínua com um objetivo claro: reduzir ao máximo a latência, especificamente a duração das pausas "Stop-The-World" (STW).
+
+-------------------------------------
+  O PONTO DE PARTIDA (ANTES DO GO 1.5): A ERA STW
+-------------------------------------
+- Nas primeiras versões, o Go usava um coletor de lixo paralelo, mas totalmente "Stop-The-World".
+- Isso significava que, para executar um ciclo de GC, a aplicação inteira era **completamente congelada**.
+- As fases de marcação (Mark) e varredura (Sweep) aconteciam durante essa pausa.
+- Para aplicações com heaps grandes, essas pausas podiam durar centenas de milissegundos, o que era um grande obstáculo para serviços que precisavam de respostas rápidas.
+
+-------------------------------------
+  MARCOS IMPORTANTES NA HISTÓRIA DO GC
+-------------------------------------
+
+  **Go 1.5: A REVOLUÇÃO CONCORRENTE (AGOSTO DE 2015)**
+  - O marco mais importante. O GC foi completamente reescrito.
+  - O antigo modelo STW foi substituído pelo algoritmo "Tri-color Mark-and-Sweep" concorrente que conhecemos hoje.
+  - **IMPACTO:** As longas pausas de centenas de milissegundos foram drasticamente reduzidas para, tipicamente, menos de 10ms (e hoje, frequentemente na casa de microssegundos). Isso tornou o Go viável para uma vasta gama de serviços de baixa latência.
+
+-------------------------------------
+  **Go 1.8: REFINAMENTOS E OTIMIZAÇÕES (FEVEREIRO DE 2017)**
+  - O foco foi tornar o ciclo concorrente ainda mais eficiente.
+  - A equipe de Go percebeu que, mesmo com a marcação concorrente, a preparação e a finalização do ciclo ainda causavam pausas significativas.
+  - **IMPACTO:** As otimizações nesta versão focaram em reduzir o trabalho feito durante as pausas STW, diminuindo ainda mais a latência. A "assistência de marcação" (Mark Assist) foi aprimorada para ser menos agressiva e mais justa com as goroutines da aplicação. O resultado foi pausas STW consistentemente abaixo de 1ms para a maioria das aplicações.
+
+-------------------------------------
+  **Go 1.14: PREEMPÇÃO NÃO-COOPERATIVA (FEVEREIRO DE 2020)**
+  - Esta não é uma mudança direta no GC, mas teve um impacto enorme em sua previsibilidade.
+  - **O PROBLEMA:** Antes, uma goroutine em um loop computacional apertado (sem chamadas de função) podia impedir o início de um ciclo de GC, pois o scheduler não conseguia encontrar um "ponto seguro" para pausá-la.
+  - **A SOLUÇÃO:** A preempção baseada em sinais permitiu ao runtime forçar a interrupção dessas goroutines.
+  - **IMPACTO NO GC:** Garantiu que o GC pudesse começar seu ciclo no momento certo, sem ser atrasado por goroutines "egoístas". Isso tornou a latência do GC muito mais consistente e previsível.
+
+-------------------------------------
+  **Go 1.15 e 1.16: REDUÇÃO DE ALOCAÇÕES (2020/2021)**
+  - A maneira mais eficaz de tornar o GC mais rápido é gerar menos lixo.
+  - O foco dessas versões foi otimizar o compilador e a biblioteca padrão para alocar menos memória na heap.
+  - **IMPACTO:** Menos alocações significam menos pressão sobre o alocador de memória e o GC. Como resultado, o GC precisa ser acionado com menos frequência, melhorando a performance geral da aplicação.
+
+-------------------------------------
+  **Go 1.19: SOFT MEMORY LIMIT (AGOSTO DE 2022)**
+  - Introduziu uma forma de o desenvolvedor dar uma "dica" ao runtime sobre o uso de memória desejado.
+  - **COMO FUNCIONA:** O desenvolvedor pode definir um limite de memória (via `runtime/debug.SetMemoryLimit`). Este não é um limite rígido.
+  - **IMPACTO:** Quando a memória total do programa se aproxima desse limite, o GC se torna mais agressivo, rodando com mais frequência para tentar respeitar o alvo. Isso é extremamente útil em ambientes com recursos restritos (como contêineres Kubernetes) para evitar que o processo seja morto pelo sistema (OOM Killer).
+
+-------------------------------------
+  GO x NODE.JS (V8): EVOLUÇÕES PARALELAS
+-------------------------------------
+- A história do GC do V8 (motor do Node.js) também é de otimização constante, mas com uma filosofia diferente.
+- Enquanto o Go focou em aperfeiçoar seu GC concorrente e não-geracional para servidores, o V8 focou em melhorar seu GC geracional para a interatividade de navegadores.
+- Ambas as equipes de engenharia são de classe mundial e chegaram a soluções de ponta, mas otimizadas para problemas ligeiramente diferentes, demonstrando que não há uma "solução única" para o gerenciamento de memória.
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ A história do GC do Go é a busca pela menor latência STW possível.
+✅ Go 1.5 foi a virada de chave: de um GC STW para um concorrente.
+✅ Melhorias posteriores focaram em refinar o ciclo, garantir previsibilidade (preempção) e reduzir a carga de trabalho (menos alocações).
+✅ Soft Memory Limit (Go 1.19) deu aos desenvolvedores mais controle sobre o trade-off memória vs. CPU do GC.

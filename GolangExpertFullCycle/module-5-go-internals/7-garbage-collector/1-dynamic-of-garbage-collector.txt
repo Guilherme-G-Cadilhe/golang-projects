@@ -1,0 +1,100 @@
+=====================================
+  GARBAGE COLLECTOR (GC) EM GO
+=====================================
+- O Garbage Collector (GC) é um processo automático do Go Runtime que libera a memória de objetos que não são mais necessários para o programa.
+- Sua principal função é prevenir "vazamentos de memória" (memory leaks), onde a memória é alocada mas nunca liberada, consumindo recursos indefinidamente.
+
+-------------------------------------
+  CARACTERÍSTICAS DO GC DO GO
+-------------------------------------
+- O GC do Go é projetado com um objetivo principal: pausas ("Stop the World") extremamente curtas, o que é vital para aplicações de baixa latência como servidores web.
+
+  1) NÃO-GERACIONAL:
+     - Diferente de muitos GCs (como o do Java/V8), ele não separa os objetos em "gerações" (novos vs. velhos). Ele escaneia toda a heap de objetos alcançáveis a cada ciclo, tratando todos igualmente.
+
+  2) CONCORRENTE:
+     - A maior parte do trabalho do GC (as fases mais demoradas de marcação e varredura) acontece CONCORRENTEMENTE, ou seja, ao mesmo tempo em que o seu programa está executando. As pausas onde o programa é totalmente parado (Stop the World) são minimizadas.
+
+  3) TRI-COLOR MARK AND SWEEP:
+     - É o nome do algoritmo usado. Ele categoriza os objetos em três cores para controlar o processo de verificação.
+
+-------------------------------------
+  CONCEITO-CHAVE: ALCANÇABILIDADE (REACHABILITY)
+-------------------------------------
+- O GC considera que um objeto está "vivo" se ele for "alcançável". Se não for, é lixo.
+- O processo de verificação sempre começa pelos "ROOTS" (raízes):
+  * Variáveis globais.
+  * Variáveis ativas nas stacks de todas as goroutines.
+  * Registradores da CPU.
+
+[Exemplo]
+- Uma variável global `globalVar` referencia um objeto A.
+- O objeto A referencia um objeto B.
+- O objeto B referencia um objeto C.
+- O objeto D não é referenciado por nenhum outro objeto.
+- 2 - A, B e C são alcançaveis por que podem ser acessados  a partir da variável global `globalVar` . O objeto D é inalcançavel poque não há nenhuma referência a ele a partir das raizes ou de outros objetos alcançáveis.
+
+- A partir das raízes, o GC segue cada ponteiro e referência, de objeto em objeto, para encontrar tudo que está conectado. No exemplo, `A`, `B` e `C` são alcançáveis, enquanto `D` é um "objeto ilhado", considerado lixo.
+
+-------------------------------------
+  O ALGORITMO: TRI-COLOR MARK AND SWEEP
+-------------------------------------
+- Para gerenciar o que já foi verificado durante a fase concorrente, o GC "pinta" os objetos:
+
+  * ⚪ BRANCO: Objeto ainda não visitado. No início, todos são brancos. Ao final, qualquer objeto que permanecer branco é lixo.
+  * ⚫ CINZA: Objeto visitado e alcançável, mas seus filhos (objetos que ele referencia) ainda precisam ser escaneados. É a "fila de trabalho" do GC.
+  * ⬛ PRETO: Objeto visitado, alcançável, e todos os seus filhos também já foram escaneados. Está "processado" neste ciclo.
+
+- WRITE BARRIER (BARREIRA DE ESCRITA):
+  - Um mecanismo crucial para o GC concorrente. Ele é ativado durante a fase de marcação.
+  - Sua função é interceptar escritas de ponteiros que seu programa faz, para que o GC não se perca.
+  - Exemplo: Se o seu código faz um objeto PRETO apontar para um objeto BRANCO, a Write Barrier "pinta" o objeto BRANCO de CINZA, garantindo que o GC o visite e não o colete como lixo por engano.
+
+-------------------------------------
+  AS 4 FASES DO CICLO DE GC DO GO
+-------------------------------------
+
+  FASE 1: MARK SETUP (SETUP DA MARCAÇÃO) - [PAUSA - STOP THE WORLD]
+    - Pausa muito curta (dezenas de microssegundos).
+    - Ativa a "Write Barrier".
+    - Percorre os "Roots" (variáveis globais e stacks) e marca os objetos diretamente alcançáveis como CINZA.
+
+  FASE 2: MARKING (MARCAÇÃO) - [CONCORRENTE]
+    - A fase mais longa. A aplicação continua rodando normalmente.
+    - O GC usa workers em background (cerca de 25% da CPU) para processar os objetos.
+    - O worker pega um objeto CINZA, escaneia seus filhos, marca os filhos como CINZA e marca o objeto original como PRETO.
+    - Isso se repete até não haver mais objetos CINZA na fila.
+    - O "Mark Assist" pode "recrutar" as goroutines da própria aplicação para ajudar na marcação se a alocação de memória estiver acontecendo mais rápido que a marcação do GC.
+
+  FASE 3: MARK TERMINATION (FINALIZAÇÃO DA MARCAÇÃO) - [PAUSA - STOP THE WORLD]
+    - Outra pausa muito curta (dezenas a centenas de microssegundos).
+    - Desliga a "Write Barrier".
+    - Finaliza o trabalho de marcação, processando os últimos objetos que restaram na fila (geralmente por causa de operações interceptadas pela Write Barrier).
+    - Neste ponto, a decisão está tomada: o que é PRETO vive, o que é BRANCO morre.
+
+  FASE 4: SWEEPING (VARREDURA) - [CONCORRENTE]
+    - A aplicação volta a rodar a todo vapor.
+    - Em background, o GC percorre a heap.
+    - Todos os objetos que permaneceram BRANCOS têm sua memória liberada e devolvida ao alocador para ser reutilizada.
+    - Essa limpeza acontece "on-demand", conforme a necessidade de nova memória.
+
+-------------------------------------
+  GO x NODE.JS (V8): UMA COMPARAÇÃO DE FILOSOFIAS
+-------------------------------------
+- GO (NÃO-GERACIONAL):
+  - Filosofia: Otimizado para BAIXA LATÊNCIA (pausas STW mínimas).
+  - Trata todos os objetos da mesma forma, escaneando toda a heap a cada ciclo. Ideal para servidores e sistemas que não podem tolerar pausas longas.
+
+- NODE.JS/V8 (GERACIONAL):
+  - Filosofia: Otimizado para ALTO THROUGHPUT (volume total de trabalho).
+  - Baseia-se na hipótese de que "a maioria dos objetos morre jovem". A memória é dividida em "Geração Jovem" e "Geração Antiga". A coleta na Geração Jovem é muito frequente e rápida.
+  - Isso pode resultar em pausas STW mais longas (mas menos frequentes) ao coletar a Geração Antiga, o que é aceitável para aplicações como navegadores.
+
+-------------------------------------
+  DICAS RÁPIDAS
+-------------------------------------
+✅ GC do Go = Concorrente, Não-Geracional, Tri-Color Mark & Sweep.
+✅ Objetivo principal: Pausas Stop-the-World (STW) extremamente curtas.
+✅ O ciclo tem 4 fases: Setup (STW) -> Marking (Concorrente) -> Termination (STW) -> Sweeping (Concorrente).
+✅ Write Barrier: O "vigia" que garante que o GC não perca nenhuma referência enquanto o programa está rodando.
+✅ Branco = Lixo (no final), Cinza = Na fila, Preto = Processado.

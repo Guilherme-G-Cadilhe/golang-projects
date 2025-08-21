@@ -1,0 +1,28 @@
+=====================================
+  O NETWORK POLLER DO GO
+=====================================
+- O Network Poller (Netpoller) é o componente interno do Go Runtime que implementa o I/O de rede não-bloqueante. Ele é o coração da eficiência do Go para aplicações de rede.
+
+-------------------------------------
+  O PAPEL DO NETPOLLER
+-------------------------------------
+- ABSTRAÇÃO MULTIPLATAFORMA: O Netpoller é uma camada de abstração que utiliza o melhor mecanismo de I/O Multiplexing disponível no sistema operacional: `epoll` no Linux, `kqueue` no macOS/BSD e `IOCP` no Windows. Isso permite que o código Go seja portável.
+
+- INTEGRAÇÃO COM O SCHEDULER: Sua função principal é integrar o I/O com o scheduler de goroutines. Ele evita que uma goroutine que está esperando pela rede bloqueie sua thread do SO (M).
+
+- FLUXO DE FUNCIONAMENTO:
+  1. Uma goroutine tenta ler de uma conexão de rede.
+  2. A operação é registrada como não-bloqueante.
+  3. O FD da conexão é passado para o Netpoller.
+  4. A goroutine é "estacionada" (colocada para dormir no estado `waiting`).
+  5. A thread do SO (M) que a executava fica livre para executar outras goroutines.
+  6. O Netpoller (rodando em seu próprio loop) espera por notificações do Kernel (via `epoll_wait`, etc.).
+  7. Quando o Kernel notifica que o FD está pronto, o Netpoller encontra a goroutine estacionada e a torna "pronta para executar" (`runnable`).
+  8. O scheduler do Go eventualmente executa a goroutine, que agora pode ler os dados sem bloqueio.
+
+-------------------------------------
+  GO x NODE.JS (LIBUV) - A SEMELHANÇA
+-------------------------------------
+- O Node.js usa uma biblioteca chamada `libuv` para seu I/O assíncrono.
+- A `libuv` tem exatamente o mesmo papel do Netpoller do Go: é uma abstração multiplataforma sobre `epoll`, `kqueue`, `IOCP`, etc.
+- A principal diferença não está no mecanismo de I/O (que é fundamentalmente o mesmo), mas no modelo de concorrência apresentado ao desenvolvedor (goroutines/channels em Go vs. Event Loop/Promises em Node.js).

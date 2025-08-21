@@ -1,0 +1,42 @@
+=====================================
+  DEEP DIVE: COMO O EPOLL FUNCIONA NO LINUX
+=====================================
+- `epoll` é a chamada de sistema do Kernel do Linux que permite o monitoramento de I/O de alta performance e escalável, sendo a base para servidores web modernos como Nginx e para o runtime do Go no Linux.
+
+-------------------------------------
+  POR QUE O EPOLL É TÃO EFICIENTE?
+-------------------------------------
+- ESTADO NO KERNEL: Diferente de `select`/`poll`, o `epoll` mantém a lista de FDs de interesse dentro do próprio Kernel. A aplicação não precisa reenviar a lista a cada chamada.
+- NOTIFICAÇÃO POR EVENTO: `epoll` não varre a lista inteira. O Kernel notifica a aplicação apenas sobre os FDs que tiveram eventos (ficaram prontos para leitura/escrita).
+- ESCALABILIDADE: A complexidade de `epoll_wait` depende do número de eventos ocorridos, não do número de FDs monitorados. Isso permite escalar para dezenas de milhares de conexões com performance constante.
+
+-------------------------------------
+  A DINÂMICA DAS CHAMADAS DE SISTEMA
+-------------------------------------
+- O uso do `epoll` é feito através de um ciclo de três syscalls principais:
+
+  1. epoll_create(): CRIAÇÃO DA INSTÂNCIA
+     - A aplicação pede ao Kernel para criar uma instância `epoll`.
+     - O Kernel cria essa estrutura de dados interna e devolve para a aplicação um File Descriptor que representa a própria instância `epoll`. (Sim, o `epoll` é um FD que monitora outros FDs).
+
+  2. epoll_ctl(): CONTROLE DOS FDs
+     - Com o FD da instância `epoll` em mãos, a aplicação usa `epoll_ctl` para gerenciar a lista de interesse no Kernel.
+     - Ações possíveis:
+       * `EPOLL_CTL_ADD`: Adicionar um novo FD (ex: uma nova conexão de cliente) para ser monitorado.
+       * `EPOLL_CTL_MOD`: Modificar os eventos de interesse para um FD já registrado.
+       * `EPOLL_CTL_DEL`: Remover um FD da lista (ex: quando um cliente desconecta).
+
+  3. epoll_wait(): ESPERA PELOS EVENTOS
+     - Esta é a chamada que bloqueia. A aplicação chama `epoll_wait` e "dorme".
+     - O Kernel monitora a lista de FDs registrados.
+     - Quando um ou mais FDs ficam prontos (ex: chegam dados na rede), o Kernel "acorda" a aplicação.
+     - `epoll_wait` retorna uma lista contendo APENAS os FDs que estão prontos para I/O.
+     - A aplicação então percorre essa pequena lista de FDs prontos e processa cada um.
+
+- FLUXO COMPLETO:
+  `App --epoll_create--> Kernel (cria instância epoll, retorna FD_epoll)`
+  `App --epoll_ctl(ADD, FD_socket)--> Kernel (registra interesse)`
+  `App --epoll_wait--> (bloqueia e dorme)`
+  `... dados chegam na rede ...`
+  `Kernel --> (acorda a App, epoll_wait retorna FD_socket)`
+  `App --> (processa dados do FD_socket)`
